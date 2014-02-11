@@ -1,4 +1,4 @@
 import FWCore.ParameterSet.Config as cms
 
-demo = cms.EDAnalyzer('L1ProtoBuffMaker'
+demo = cms.EDAnalyzer('L1ProtoBufMaker'
 )

@@ -1,0 +1,82 @@
+from l1NtupleMC_cfg.py:
+
+process.p = cms.Path(
+    process.RawToDigi
+    +process.l1NtupleProducer
+    +process.l1extraParticles
+    +process.l1ExtraTreeProducer
+    +process.l1GtTriggerMenuLite
+    +process.l1MenuTreeProducer
+    +process.l1RecoTreeProducer
+    +process.l1MuonRecoTreeProducer
+)
+
+process.MessageLogger.cerr.FwkReport.reportEvery = 1000
+        'file:test/MinBias_TuneZ2star_8TeV-pythia6_PU_S10_START53_V7A-v1_AODSIM.root'
+
+
+from test/l1NtupleFromAODSIM.py
+# remove RECO temporarily
+process.p.remove(process.l1RecoTreeProducer)
+process.p.remove(process.l1MuonRecoTreeProducer)
+
+
+L1Extra ntuple EDanalyzer module (code you need to copy) :
+http://cvs.web.cern.ch/cvs/cgi-bin/viewcvs.cgi/UserCode/L1TriggerDPG/src/L1ExtraTreeProducer.cc?view=log
+
+Contains one of these objects (examples for getting info from the L1Extra collections) :
+http://cvs.web.cern.ch/cvs/cgi-bin/viewcvs.cgi/UserCode/L1TriggerDPG/src/L1AnalysisL1Extra.cc?view=log
+
+Analyzer methods :
+- get L1Extra collections from the event
+- read in file defines the menu
+- call a bunch of methods that extract highest thresholds for each trigger
+- write to protobuf
+
+Need to 
+- get those Dataformat headers
+- get the L1Extra header & implementation from somewhere.
+- read in menu file??
+
+------------------------------------------------------
+
+What mark's CreateReducedSample does:
+- read in ntuple, put into l1menu::FullSample obj (inputSample)
+- open output l1menu::ReducedSample outputReducedSample( *pMyMenu ); (pMyMenu is type l1menu::TriggerMenu)
+- add inputSample to outputReducedSample
+- Save outputReducedSample to reducedSample.proto
+
+
+	How FullSample loads the ntuple:
+	- Creates L1UpgradeNtuple obj, tells that to open the ntuple. (that does CheckFileFirst, then OpenWithoutInit - maps nutple trees to obj trees)
+
+	What happens when you create a ReducedSample:
+	- constructor calls l1menu::ReducedSamplePrivateMembers::ReducedSamplePrivateMembers( const l1menu::ReducedSample& thisObject, const l1menu::TriggerMenu& newTriggerMenu )
+	- this copies details of trigger menu used to create sample into protobuf storage
+
+	What happens when you add inputSample to outputSample:
+	- calls void l1menu::ReducedSample::addSample( const l1menu::FullSample& originalSample )
+	- loops over events in the FullSample
+	- group events into bunches of 20000 (= Run obj, not a CMS run ) [ so the output is a SampleHeaer + several Run obj]
+	- loop over all triggers
+	- do l1menu::tools::setTriggerThresholdsAsTightAsPossible( event, *pTrigger, 0.001 ); (This gets the tightest possible trigger threshold so that the event will still pass - actually modifies trigger object (well a copy of it))
+	- Accounts for correlations in thresholds by scaling other thresholds against first threshold
+	- Set all thresholds in the trigger = 0
+	- Then run through each threshold individually to see what low limit is
+	- Set all of the parameters in the protobuf event to match the thresholds in the trigger
+	- 
+
+	What happens when you save to file:
+	- Open file
+	- Setup protobuf file handlers
+	- Write MAGIC_NUMBER ("l1reducedsample") and file format identifier uncompressed
+	- Write Header and each Run to proto file in compressed form
+
+
+------------------------------------------------------
+Analyze method:
+- iEvent.getByLabel() for the various collections (L1EmParticleCollection,L1JetParticleCollection,L1MuonParticleCollection,L1EtMissParticleCollection,L1HFRingsCollection), assign each to a private var
+
+- check var.isValid()
+- now deviate from the Producer.cc. Need to loop through each collection to get the relevant info?
+- 
