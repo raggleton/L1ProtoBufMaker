@@ -20,17 +20,14 @@
 
 // system include files
 #include <memory>
-#include <iostream>
-#include <fstream>
 
-// user include files
+// framework
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/EDAnalyzer.h"
-
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
-
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
 
 // data formats
 #include "DataFormats/L1Trigger/interface/L1EmParticleFwd.h"
@@ -45,7 +42,8 @@
 #include "DataFormats/L1Trigger/interface/L1HFRings.h"
 #include "DataFormats/L1GlobalTrigger/interface/L1GlobalTriggerReadoutRecord.h"
 
-#include "UserCode/L1TriggerDPG/interface/L1AnalysisL1Extra.h"
+#include "L1AnalysisL1Extra.h"
+#include "L1AnalysisL1ExtraDataFormat.h"
 
 //
 // class declaration
@@ -56,7 +54,7 @@ class L1ProtoBufMaker : public edm::EDAnalyzer {
     explicit L1ProtoBufMaker(const edm::ParameterSet&);
     ~L1ProtoBufMaker();
 
-    static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
+    // static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
   
   private:
     virtual void beginJob() ;
@@ -68,26 +66,29 @@ class L1ProtoBufMaker : public edm::EDAnalyzer {
     virtual void beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&);
     virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&);
 
-    // ----------member data ---------------------------
-    L1Analysis::L1AnalysisL1Extra* l1Extra_;
-    L1Analysis::L1AnalysisL1ExtraDataFormat * l1ExtraData_;
+public:
+  
+  L1Analysis::L1AnalysisL1Extra* l1Extra;
+  L1Analysis::L1AnalysisL1ExtraDataFormat * l1ExtraData;
 
-    unsigned maxL1Extra_;
+private:
 
-    // EDM input tags
-    edm::InputTag nonIsoEmLabel_;
-    edm::InputTag isoEmLabel_;
-    edm::InputTag tauJetLabel_;
-    edm::InputTag cenJetLabel_;
-    edm::InputTag fwdJetLabel_;
-    edm::InputTag muonLabel_;
-    edm::InputTag metLabel_;
-    edm::InputTag mhtLabel_;
-    edm::InputTag hfRingsLabel_;
+  unsigned maxL1Extra_;
 
-    bool doUpgrade_;
-    edm::InputTag tauLabel_;
-    edm::InputTag isoTauLabel_;
+  // EDM input tags
+  edm::InputTag nonIsoEmLabel_;
+  edm::InputTag isoEmLabel_;
+  edm::InputTag tauJetLabel_;
+  edm::InputTag cenJetLabel_;
+  edm::InputTag fwdJetLabel_;
+  edm::InputTag muonLabel_;
+  edm::InputTag metLabel_;
+  edm::InputTag mhtLabel_;
+  edm::InputTag hfRingsLabel_;
+
+  bool doUpgrade_;
+  edm::InputTag tauLabel_;
+  edm::InputTag isoTauLabel_;
 };
 
 //
@@ -112,18 +113,11 @@ L1ProtoBufMaker::L1ProtoBufMaker(const edm::ParameterSet& iConfig):
   mhtLabel_(iConfig.getUntrackedParameter("mhtLabel",edm::InputTag("l1extraParticles:MHT"))),
   hfRingsLabel_(iConfig.getUntrackedParameter("hfRingsLabel",edm::InputTag("l1extraParticles")))
 {
-  //now do what ever initialization is needed
-  std::ofstream myfile;
-  myfile.open ("example.txt");
-  myfile << "Writing this to a file.\n";
-  myfile.close();
 
   maxL1Extra_ = iConfig.getParameter<unsigned int>("maxL1Extra");
-
-  l1Extra_     = new L1Analysis::L1AnalysisL1Extra();
-  l1ExtraData_ = l1Extra->getData();
-  
-  // set up output
+ 
+  l1Extra     = new L1Analysis::L1AnalysisL1Extra();
+  l1ExtraData = l1Extra->getData();
 
 }
 
@@ -145,7 +139,6 @@ L1ProtoBufMaker::~L1ProtoBufMaker()
 void
 L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
-  using namespace edm;
 
   ///////////////////////////////////////////
   // get L1Extra collectionsfrom the event //
@@ -173,65 +166,12 @@ L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
   iEvent.getByLabel(mhtLabel_, mhts);
   iEvent.getByLabel(hfRingsLabel_, hfRings);
 
-  if (isoEm.isValid()){ 
-    l1Extra_->SetIsoEm(isoEm, maxL1Extra_);
-  } else {
-    edm::LogWarning("MissingProduct") << "L1Extra Iso Em not found. Branch will not be filled" << std::endl;
-  }
-
-  if (nonIsoEm.isValid()){ 
-    l1Extra_->SetNonIsoEm(nonIsoEm, maxL1Extra_);
-  } else {
-    edm::LogWarning("MissingProduct") << "L1Extra Non Iso Em not found. Branch will not be filled" << std::endl;
-  }
-
-  if (cenJet.isValid()){ 
-    l1Extra_->SetCenJet(cenJet, maxL1Extra_);
-  } else {
-    edm::LogWarning("MissingProduct") << "L1Extra Central Jets not found. Branch will not be filled" << std::endl;
-  }
-
-  if (tauJet.isValid()){ 
-    l1Extra_->SetTauJet(tauJet, maxL1Extra_);
-  } else {
-    edm::LogWarning("MissingProduct") << "L1Extra Tau Jets not found. Branch will not be filled" << std::endl;
-  }
-
-  if (fwdJet.isValid()){ 
-    l1Extra_->SetFwdJet(fwdJet, maxL1Extra_);
-  } else {
-    edm::LogWarning("MissingProduct") << "L1Extra Forward Jets not found. Branch will not be filled" << std::endl;
-  }
-
-  if (muon.isValid()){ 
-    l1Extra_->SetMuon(muon, maxL1Extra_);
-  } else {
-    edm::LogWarning("MissingProduct") << "L1Extra Muons not found. Branch will not be filled" << std::endl;
-  }
-
-  if (mets.isValid()){ 
-    l1Extra_->SetMet(mets);
-  } else {
-    edm::LogWarning("MissingProduct") << "L1Extra MET not found. Branch will not be filled" << std::endl;
-  }
-
-  if (mhts.isValid()){ 
-    l1Extra_->SetMht(mhts);  
-  } else {
-    edm::LogWarning("MissingProduct") << "L1Extra MHT not found. Branch will not be filled" << std::endl;
-  }
-
-  if (hfRings.isValid()){ 
-    l1Extra_->SetHFring(hfRings);  
-  } else {
-    edm::LogWarning("MissingProduct") << "L1Extra HF Rings not found. Branch will not be filled" << std::endl;
-  }
 
   //////////////////////////////////////////////////
   // Now write this to the protocol buffer output //
   //////////////////////////////////////////////////
 
-
+}
 
 // ------------ method called once each job just before starting event loop  ------------
 void 
@@ -270,14 +210,14 @@ L1ProtoBufMaker::endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
-void
+/*void
 L1ProtoBufMaker::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   //The following says we do not know what parameters are allowed so do no validation
   // Please change this to state exactly what you do use, even if it is no parameters
   edm::ParameterSetDescription desc;
   desc.setUnknown();
   descriptions.addDefault(desc);
-}
+}*/
 
 //define this as a plug-in
 DEFINE_FWK_MODULE(L1ProtoBufMaker);
