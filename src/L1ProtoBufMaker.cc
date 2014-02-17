@@ -50,8 +50,8 @@
 // #include "UserCode/L1TriggerDPG/interface/L1AnalysisL1Extra.h"
 // #include "UserCode/L1TriggerDPG/interface/L1AnalysisL1ExtraDataFormat.h"
 // scram b doesn't include the relevant libraries, even when I tell it to in the BuildFile.xml grrr
-#include "L1AnalysisL1Extra.h"
-#include "L1AnalysisL1ExtraDataFormat.h"
+// #include "L1AnalysisL1Extra.h"
+// #include "L1AnalysisL1ExtraDataFormat.h"
 
 // Headers from MenuGeneration. Which one will work?
 // #include "L1Trigger/MenuGeneration/interface/l1menu/ReducedSample.h"
@@ -87,10 +87,6 @@ class L1ProtoBufMaker : public edm::EDAnalyzer {
 
   public:
     
-    L1Analysis::L1AnalysisL1Extra * l1Extra;
-    L1Analysis::L1AnalysisL1ExtraDataFormat * l1ExtraData;
-
-    // std::unique_ptr<l1menu::TriggerMenu> pMyMenu; // trigger menu, as set by user
     l1menu::ReducedSample * pReducedSample; // reduced sample for getting trigger thresholds, etc
 
   private:
@@ -215,10 +211,14 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   l1menu::L1TriggerDPGEvent event;
 
   // set event PU weight, run number, lumi section and event number
-  event.setWeight(1);
+  event.setWeight(1); // TODO
   event.setRun(iEvent.id().run());
   event.setLS(iEvent.id().luminosityBlock());
   event.setEventNum(iEvent.id().event());
+
+  // set trigger bits
+  
+  // event.setL1Bits(SOMETHING);
 
   // fill it with collection info
   if (nonIsoEm.isValid() && isoEm.isValid())
