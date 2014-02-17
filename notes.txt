@@ -74,6 +74,8 @@ What mark's CreateReducedSample does:
 
 
 ------------------------------------------------------
+THIS IS A TESTAAAAAA
+------------------------------------------------------
 Analyze method:
 - iEvent.getByLabel() for the various collections (L1EmParticleCollection,L1JetParticleCollection,L1MuonParticleCollection,L1EtMissParticleCollection,L1HFRingsCollection), assign each to a private var
 
