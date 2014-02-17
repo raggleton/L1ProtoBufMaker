@@ -14,8 +14,8 @@ process.source = cms.Source("PoolSource",
     )
 )
 
-process.demo = cms.EDAnalyzer('L1ProtoBufMaker'
+process.protobufMaker = cms.EDAnalyzer('L1ProtoBufMaker'
 )
 
 
-process.p = cms.Path(process.demo)
+process.p = cms.Path(process.protobufMaker)

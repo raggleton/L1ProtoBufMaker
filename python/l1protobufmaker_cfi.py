@@ -10,6 +10,6 @@ demo = cms.EDAnalyzer('L1ProtoBufMaker',
   metLabel = cms.untracked.InputTag("l1extraParticles:MET"),
   mhtLabel = cms.untracked.InputTag("l1extraParticles:MHT"),
   hfRingsLabel = cms.untracked.InputTag("l1extraParticles"),
-  maxL1Extra = cms.uint32(20),
-  menuFilename = cms.string("../MenuGeneration/test/L1Menu_input_std.txt")
+  menuFilename = cms.string("../MenuGeneration/test/L1Menu_input_std.txt"),
+  protobufFilename = cms.string("test.pb")
 )
