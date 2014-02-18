@@ -176,7 +176,7 @@ L1ProtoBufMaker::L1ProtoBufMaker(const edm::ParameterSet& iConfig):
 	}
 
 	// Get output protobuf file name
-	protobufFilename_ = iConfig.getUntrackedParameter<std::string>("protobufFilename","test.pb");
+	protobufFilename_ = iConfig.getUntrackedParameter<std::string>("protobufFilename","default.pb");
 
 }
 
