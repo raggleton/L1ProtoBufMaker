@@ -1,5 +1,17 @@
 import FWCore.ParameterSet.Config as cms
 
+# Robin Aggleton 18/2/14, robin.aggleton@cern.ch
+#
+# Default configuration for L1ProtoBufMaker EDAnalyzer
+# Include this in your _cfg.py file by adding:
+# 
+# process.load("L1Trigger.L1ProtoBufMaker.l1protobufmaker_cfi")
+#
+# Override default options with statements like
+# 
+# processs.protoBufMaker.protobufFilename = cms.string("myFile.pb")
+#
+
 protoBufMaker = cms.EDAnalyzer('L1ProtoBufMaker',
 	nonIsoEmLabel = cms.untracked.InputTag("l1extraParticles:NonIsolated"),
   isoEmLabel = cms.untracked.InputTag("l1extraParticles:Isolated"),
