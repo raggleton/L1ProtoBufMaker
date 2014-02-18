@@ -3,10 +3,11 @@
 <use name="FWCore/ParameterSet"/>
 <use name="UserCode/L1TriggerDPG"/>
 <use name="L1Trigger/MenuGeneration"/>
+<use name="PhysicsTools/Utilities"/>
 
 <include_path path="../../L1Trigger/MenuGeneration/interface"/>
-<include_path path="../../L1Trigger/MenuGeneration/interface/l1menu"/>
-<include_path path="../../L1Trigger/MenuGeneration/interface/l1menu/tools"/>
+<!-- <include_path path="../../L1Trigger/MenuGeneration/interface/l1menu"/> -->
+<!-- <include_path path="../../L1Trigger/MenuGeneration/interface/l1menu/tools"/> -->
 
 <!-- <include_path path="../../UserCode/L1TriggerDPG/interface"/> -->
 

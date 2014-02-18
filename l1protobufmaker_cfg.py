@@ -21,6 +21,11 @@ process.source = cms.Source("PoolSource",
 )
 
 process.load("L1Trigger.L1ProtoBufMaker.l1protobufmaker_cfi")
-process.protoBufMaker.protobufFilename = cms.string("test2.pb")
+process.protoBufMaker.doPUWeights      = cms.untracked.bool(True)
+process.protoBufMaker.puMCFile         = cms.untracked.string("PUHistS10.root")
+process.protoBufMaker.puDataFile       = cms.untracked.string("") # need filename here!
+process.protoBufMaker.puMCHist         = cms.untracked.string("pileup")
+process.protoBufMaker.puDataHist       = cms.untracked.string("pileup")
+process.protoBufMaker.protobufFilename = cms.untracked.string("myTest.pb")
 
 process.p = cms.Path(process.protoBufMaker)
