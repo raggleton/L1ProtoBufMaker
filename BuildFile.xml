@@ -3,9 +3,9 @@
 <use name="FWCore/ParameterSet"/>
 
 <use name="PhysicsTools/Utilities"/>
-<!-- <use name="DataFormats/L1GlobalTrigger"/>
+<use name="DataFormats/L1GlobalTrigger"/>
 <use name="DataFormats/L1Trigger"/>
- -->
+
 <use name="L1Trigger/MenuGeneration"/>
 <use name="UserCode/L1TriggerDPG"/>
 <use name="UserCode/L1TriggerUpgrade"/>
