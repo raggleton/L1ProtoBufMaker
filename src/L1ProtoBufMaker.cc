@@ -56,6 +56,7 @@
 #include "DataFormats/L1Trigger/interface/L1EtMissParticle.h"
 #include "DataFormats/L1Trigger/interface/L1HFRingsFwd.h"
 #include "DataFormats/L1Trigger/interface/L1HFRings.h"
+#include "DataFormats/L1GlobalMuonTrigger/interface/L1MuGMTReadoutCollection.h"
 
 // Headers from MenuGeneration
 #include "l1menu/ReducedSample.h"
@@ -111,10 +112,11 @@ class L1ProtoBufMaker : public edm::EDAnalyzer {
 		edm::InputTag fwdJetLabel_;
 		edm::InputTag tauJetLabel_;
 		edm::InputTag isoTauJetLabel_;
-		edm::InputTag muonLabel_;
+		edm::InputTag muonLabel_; 
 		edm::InputTag metLabel_;
 		edm::InputTag mhtLabel_;
 		edm::InputTag hfRingsLabel_;
+		bool doReEmulMuons_; // whether to use re emulated muons or l1extra muons
 
 		// bool doUpgrade_;
 		// edm::InputTag tauLabel_;
@@ -153,7 +155,8 @@ L1ProtoBufMaker::L1ProtoBufMaker(const edm::ParameterSet& iConfig):
 	fwdJetLabel_(iConfig.getUntrackedParameter("fwdJetLabel",edm::InputTag("l1extraParticles:Forward"))),
 	tauJetLabel_(iConfig.getUntrackedParameter("tauJetLabel",edm::InputTag("l1extraParticles:Tau"))),
 	isoTauJetLabel_(iConfig.getUntrackedParameter("isoTauJetLabel",edm::InputTag("l1extraParticles:Tau"))),
-	muonLabel_(iConfig.getUntrackedParameter("muonLabel",edm::InputTag("l1extraParticles"))),
+	doReEmulMuons_(iConfig.getUntrackedParameter("doReEmulMuons",true)),
+	muonLabel_(iConfig.getUntrackedParameter("muonLabel",edm::InputTag("gtDigis"))),
 	metLabel_(iConfig.getUntrackedParameter("metLabel",edm::InputTag("l1extraParticles:MET"))),
 	mhtLabel_(iConfig.getUntrackedParameter("mhtLabel",edm::InputTag("l1extraParticles:MHT"))),
 	hfRingsLabel_(iConfig.getUntrackedParameter("hfRingsLabel",edm::InputTag("l1extraParticles")))
@@ -161,15 +164,17 @@ L1ProtoBufMaker::L1ProtoBufMaker(const edm::ParameterSet& iConfig):
 
 	// Check PU files exist, set weights if they do
 	struct stat buf;
-	if ((stat(puMCFile_.c_str(), &buf) != -1) && (stat(puDataFile_.c_str(), &buf) != -1)) 
+	if (doPUWeights_)
 	{
-		doPUWeights_ = true;
-		lumiWeights_ = edm::LumiReWeighting(puMCFile_, puDataFile_, puMCHist_, puDataHist_);
-	}
-	else 
-	{	
-		doPUWeights_ = false;
-		edm::LogWarning("L1Prompt") << "No PU reweighting inputs - not going to calculate weights"<<std::endl;
+		if ((stat(puMCFile_.c_str(), &buf) != -1) && (stat(puDataFile_.c_str(), &buf) != -1)) 
+		{
+			lumiWeights_ = edm::LumiReWeighting(puMCFile_, puDataFile_, puMCHist_, puDataHist_);
+		}
+		else 
+		{	
+			doPUWeights_ = false; // set doPUWeights_ to false, even if the user wanted them done - there's no files!
+			edm::LogWarning("L1Prompt") << "No PU reweighting inputs - not going to calculate weights"<<std::endl;
+		}
 	}
 
 	// Get trigger menu file
@@ -231,8 +236,8 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	
 	double weight = 1.;
 
-	if (doPUWeights_ && (! iEvent.eventAuxiliary().isRealData())) {
-
+	if (doPUWeights_ && (! iEvent.eventAuxiliary().isRealData())) 
+	{
 		edm::Handle<std::vector< PileupSummaryInfo > >  puInfo;
 		iEvent.getByLabel(edm::InputTag("addPileupInfo"), puInfo);
 
@@ -240,21 +245,19 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 			std::vector<PileupSummaryInfo>::const_iterator pvi;
 
 			float tnpv = -1;
-			for(pvi = puInfo->begin(); pvi != puInfo->end(); ++pvi) {
+			for(pvi = puInfo->begin(); pvi != puInfo->end(); ++pvi) 
+			{
 
 				int bx = pvi->getBunchCrossing();
-
-				if(bx == 0) { 
+				if(bx == 0) 
+				{ 
 					tnpv = pvi->getTrueNumInteractions();
 					continue;
 				}
 
 			}
-
 			weight = lumiWeights_.weight( tnpv );
-
 		}
-
 	}
 
 	event.setWeight(weight); 
@@ -310,6 +313,7 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	edm::Handle<l1extra::L1JetParticleCollection> tauJet;
 	edm::Handle<l1extra::L1JetParticleCollection> isoTauJet;
 	edm::Handle<l1extra::L1MuonParticleCollection> muon;
+	edm::Handle<L1MuGMTReadoutCollection> reEmulMuon;
 	edm::Handle<l1extra::L1EtMissParticleCollection> mets;
 	edm::Handle<l1extra::L1EtMissParticleCollection> mhts;
 	edm::Handle<l1extra::L1HFRingsCollection> hfRings ;
@@ -320,11 +324,12 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	iEvent.getByLabel(fwdJetLabel_, fwdJet);
 	iEvent.getByLabel(tauJetLabel_, tauJet);
 	// iEvent.getByLabel(isoTauJetLabel_, isoTauJet);
-	iEvent.getByLabel(muonLabel_, muon);
 	iEvent.getByLabel(metLabel_, mets);
 	iEvent.getByLabel(mhtLabel_, mhts);
 	iEvent.getByLabel(hfRingsLabel_, hfRings);
-	
+	// Muons done below
+
+
 	//
 	// Pass collections to setters in L1TriggerDPGEvent obj
 	// 
@@ -384,13 +389,19 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	//   edm::LogWarning("MissingProduct") << "L1Extra hfRings not found. Branch will not be filled" << std::endl;
 	// } 
 
+
+	if (doReEmulMuons_) 
+		iEvent.getByLabel(muonLabel_, reEmulMuon); // use L1MuGMTReadoutCollection handle
+	else  
+		iEvent.getByLabel(muonLabel_, muon); // use l1extra collection handle
+
 	if (muon.isValid())
 	{
 		event.setMuons( muon );
-	} 
-	else 
+	}
+	else
 	{
-		edm::LogWarning("MissingProduct") << "L1Extra muons not found. Branch will not be filled" << std::endl;
+		edm::LogWarning("MissingProduct") << "Muons not found. Branch will not be filled" << std::endl;
 	}
 	 
 	//////////////////////////////////////////////////////////////////////////////
