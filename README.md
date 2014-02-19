@@ -19,9 +19,9 @@ git cms-addpkg Documentation/ReferenceManualScripts
 git clone git@github.com:mark-grimes/MenuGeneration.git L1Trigger/MenuGeneration
 # add Robin's fork & branch to MenuGeneration. Will put in master branch at some point
 cd L1Trigger/MenuGeneration
-git remote add fork git@github.com:raggleton/MenuGeneration.git
-git fetch fork
-git checkout -b ProtoBufMaker fork/ProtoBufMaker
+git remote add RobinProtoBufMaker git@github.com:raggleton/MenuGeneration.git
+git fetch RobinProtoBufMaker
+git checkout -b ProtoBufMaker RobinProtoBufMaker/ProtoBufMaker
 cd ../..
 git clone git@github.com:raggleton/L1ProtoBufMaker.git L1Trigger/L1ProtoBufMaker
 export CVSROOT=:ext:<your-cern-username>@lxplus.cern.ch:/afs/cern.ch/user/c/cvscmssw/public/CMSSW
@@ -55,11 +55,11 @@ Basic flow:
 	- This also initialises a protobuf file, and write the user-defined trigger menu to it.
 
 2. **For each event:** (`L1ProtoBufMaker::analyze()`)
-	-  Get the `l1extra` collections from the AOD. 
 	-  Create a `l1menu::L1TriggerDPGEvent` object to store event information.
 	-  Calculate the PU weight (MC only).
 	-  Set run #, LS, event #.
-	-  Set L1 trigger bits [**TODO**]
+	-  Set L1 trigger bits.
+	-  Get the `l1extra` collections from the AOD. 
 	-  Fill the event object with EG/jet/muon/… information from the AOD collections. [**TODO - muons, taus, MHT properly, jet co-ords**]
 	-  Add the `L1TriggerDPGEvent` object to `ReducedSample`. This does the following:
 		- Check to see if a new `l1protobuf::Run` object is required. ( The protobuf events are stored in groups of 20000 in a  `l1protobuf::Run`, to circumvent a limit set by Google.)

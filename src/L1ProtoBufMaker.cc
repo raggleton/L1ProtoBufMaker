@@ -6,8 +6,8 @@
 /**\class L1ProtoBufMaker L1ProtoBufMaker.cc L1Trigger/L1ProtoBufMaker/src/L1ProtoBufMaker.cc
 
  Description: [EDAnalyzer module to convert AOD to protocol buffers. 
- 				Amalgamation of UserCode/L1TriggerDPG/src/L1ExtraTreeProducer.cc, L1AnalysisEvent.cc, etc. 
- 				Resulting files can be used with Mark Grimes' menu studies tools.]
+				Amalgamation of UserCode/L1TriggerDPG/src/L1ExtraTreeProducer.cc, L1AnalysisEvent.cc, etc. 
+				Resulting files can be used with Mark Grimes' menu studies tools.]
 
  Implementation:
 		 [Notes on implementation]
@@ -25,6 +25,7 @@
 #include <vector>
 #include <stdexcept>
 #include <sys/stat.h>
+#include <algorithm>
 
 // framework
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -37,6 +38,13 @@
 // data formats
 #include "PhysicsTools/Utilities/interface/LumiReWeighting.h"
 #include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
+// #include "UserCode/L1TriggerUpgrade/interface/L1AnalysisDataFormat.h"
+// #include "UserCode/L1TriggerUpgrade/interface/L1AnalysisL1ExtraUpgradeDataFormat.h"
+
+// #include "UserCode/L1TriggerDPG/interface/L1AnalysisGT.h"
+// #include "UserCode/L1TriggerDPG/interface/L1AnalysisGTDataFormat.h"
+#include "DataFormats/L1GlobalTrigger/interface/L1GlobalTriggerReadoutRecord.h"
+#include "DataFormats/L1GlobalTrigger/interface/L1GlobalTriggerEvmReadoutRecord.h"
 
 #include "DataFormats/L1Trigger/interface/L1EmParticleFwd.h"
 #include "DataFormats/L1Trigger/interface/L1EmParticle.h"
@@ -48,7 +56,6 @@
 #include "DataFormats/L1Trigger/interface/L1EtMissParticle.h"
 #include "DataFormats/L1Trigger/interface/L1HFRingsFwd.h"
 #include "DataFormats/L1Trigger/interface/L1HFRings.h"
-#include "DataFormats/L1GlobalTrigger/interface/L1GlobalTriggerReadoutRecord.h"
 
 // Headers from MenuGeneration
 #include "l1menu/ReducedSample.h"
@@ -91,7 +98,10 @@ class L1ProtoBufMaker : public edm::EDAnalyzer {
 		std::string puDataFile_;
 		std::string puMCHist_;
 		std::string puDataHist_;
-	    edm::LumiReWeighting lumiWeights_;
+		edm::LumiReWeighting lumiWeights_;
+
+		// For L1Trigger bits
+		edm::InputTag gtSource_;
 
 		// To read in AOD file:
 		// EDM input tags
@@ -127,6 +137,7 @@ class L1ProtoBufMaker : public edm::EDAnalyzer {
 //
 // Here we get 
 // - PU data/MC hists names
+// - GT digis (for L1Trigger bits)
 // - collection names from AOD (some defaults are provided, overridden in the cfi & cfg files), 
 // - trigger menu and protobuf output filenames
 L1ProtoBufMaker::L1ProtoBufMaker(const edm::ParameterSet& iConfig):
@@ -135,6 +146,7 @@ L1ProtoBufMaker::L1ProtoBufMaker(const edm::ParameterSet& iConfig):
 	puDataFile_(iConfig.getUntrackedParameter<std::string>("puDataFile","")),
 	puMCHist_(iConfig.getUntrackedParameter<std::string>("puMCHist","pileup")),
 	puDataHist_(iConfig.getUntrackedParameter<std::string>("puDataHist","pileup")),
+	gtSource_(iConfig.getUntrackedParameter("gtSource",edm::InputTag("gtDigis"))),
 	isoEmLabel_(iConfig.getUntrackedParameter("isoEmLabel",edm::InputTag("l1extraParticles:Isolated"))),
 	nonIsoEmLabel_(iConfig.getUntrackedParameter("nonIsoEmLabel",edm::InputTag("l1extraParticles:NonIsolated"))), 
 	cenJetLabel_(iConfig.getUntrackedParameter("cenJetLabel",edm::InputTag("l1extraParticles:Central"))),
@@ -198,31 +210,6 @@ L1ProtoBufMaker::~L1ProtoBufMaker()
 void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
 
-	////////////////////////////////////////////
-	// Get L1Extra collections from the event //
-	////////////////////////////////////////////
-
-	edm::Handle<l1extra::L1EmParticleCollection> isoEm;
-	edm::Handle<l1extra::L1EmParticleCollection> nonIsoEm;
-	edm::Handle<l1extra::L1JetParticleCollection> cenJet;
-	edm::Handle<l1extra::L1JetParticleCollection> fwdJet;
-	edm::Handle<l1extra::L1JetParticleCollection> tauJet;
-	edm::Handle<l1extra::L1JetParticleCollection> isoTauJet;
-	edm::Handle<l1extra::L1MuonParticleCollection> muon;
-	edm::Handle<l1extra::L1EtMissParticleCollection> mets;
-	edm::Handle<l1extra::L1EtMissParticleCollection> mhts;
-	edm::Handle<l1extra::L1HFRingsCollection> hfRings ;
-
-	iEvent.getByLabel(isoEmLabel_, isoEm);
-	iEvent.getByLabel(nonIsoEmLabel_, nonIsoEm);
-	iEvent.getByLabel(cenJetLabel_, cenJet);
-	iEvent.getByLabel(fwdJetLabel_, fwdJet);
-	iEvent.getByLabel(tauJetLabel_, tauJet);
-	// iEvent.getByLabel(isoTauJetLabel_, isoTauJet);
-	iEvent.getByLabel(muonLabel_, muon);
-	iEvent.getByLabel(metLabel_, mets);
-	iEvent.getByLabel(mhtLabel_, mhts);
-	iEvent.getByLabel(hfRingsLabel_, hfRings);
 
 	/////////////////////////////////////////////////
 	// Create & fill L1TriggerDPGEvent             //
@@ -231,10 +218,17 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	// to the ReducedSample for further processing //
 	/////////////////////////////////////////////////
 	
+	// TODO(Robin): Put these in easy to comprehend methods, not in one long one!
 	l1menu::L1TriggerDPGEvent event;
 
-	// set event PU weight, run number, lumi section and event number
-	// do PU re-weighting for MC only
+	////////////////////////////////////////////////////////////////////
+	//                                                                //
+	// Set event PU weight, run number, lumi section and event number //
+	// Do PU re-weighting for MC only                                 //
+	// Used code from from L1AnalysisEvent.cc,                        //
+	//                                                                //
+	////////////////////////////////////////////////////////////////////
+	
 	double weight = 1.;
 
 	if (doPUWeights_ && (! iEvent.eventAuxiliary().isRealData())) {
@@ -268,11 +262,72 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	event.setLS(iEvent.id().luminosityBlock());
 	event.setEventNum(iEvent.id().event());
 
-	// set trigger bits
-	// TODO(Robin): Do setL1Bits correctly! Need to fix in L1TriggerDPGEvent.cc as well
-	// event.setL1Bits(SOMETHING);
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	//                                                                                          //
+	// Set L1 trigger bits                                                                      //
+	// Used code from L1NtupleProducer, FullSample.cpp, L1AnalysisGT.cc                         //
+	// Basically amalgamating the setting and getting of L1 trigger bits from the GlobalTrigger //
+	//                                                                                          //
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	
+	bool PhysicsBits[128] = {false}; // set default off, incase below fails
+	edm::Handle<L1GlobalTriggerReadoutRecord> gtrr_handle;
+	iEvent.getByLabel(gtSource_, gtrr_handle);
 
-	// fill it with collection info
+	if (gtrr_handle.isValid())
+	{
+		// I've removed the reliance upon L1AnalysisGT:
+		// a) to save time converting from one obj to another 
+		// (L1AnalysisGT converts DecisionWord to 2 64-bit arrays, FullSample converts them back to a 128-bit array)
+		// b) because it doesn't want to link to the UserCode library. I have no idea why.
+		
+		L1GlobalTriggerReadoutRecord const* gtrr = gtrr_handle.product();
+		// A DecisionWord is:
+		// typedef std::vector<bool> DecisionWord;
+		// See DataFormats/L1GlobalTrigger/interface/L1GlobalTriggerReadoutSetupFwd.h 
+		DecisionWord gtDecisionWord = gtrr->decisionWord(0); // Only need 0th bunch crossing - it also stores ±2 either side of 0th bx
+		std::copy(gtDecisionWord.begin(), gtDecisionWord.end(), PhysicsBits); // convert from vector<bool> to bool array
+	}
+	else
+	{
+
+		edm::LogWarning("MissingProduct") << "GT source invalid. L1 Trigger Bits not set!" << std::endl;
+	}
+
+	event.setL1Bits(PhysicsBits);
+
+	/////////////////////////////////////////
+	//                                     //
+	// Fill event with obj collection info //
+	//                                     //
+	/////////////////////////////////////////
+
+	// Get L1Extra collections from the event 
+	edm::Handle<l1extra::L1EmParticleCollection> isoEm;
+	edm::Handle<l1extra::L1EmParticleCollection> nonIsoEm;
+	edm::Handle<l1extra::L1JetParticleCollection> cenJet;
+	edm::Handle<l1extra::L1JetParticleCollection> fwdJet;
+	edm::Handle<l1extra::L1JetParticleCollection> tauJet;
+	edm::Handle<l1extra::L1JetParticleCollection> isoTauJet;
+	edm::Handle<l1extra::L1MuonParticleCollection> muon;
+	edm::Handle<l1extra::L1EtMissParticleCollection> mets;
+	edm::Handle<l1extra::L1EtMissParticleCollection> mhts;
+	edm::Handle<l1extra::L1HFRingsCollection> hfRings ;
+
+	iEvent.getByLabel(isoEmLabel_, isoEm);
+	iEvent.getByLabel(nonIsoEmLabel_, nonIsoEm);
+	iEvent.getByLabel(cenJetLabel_, cenJet);
+	iEvent.getByLabel(fwdJetLabel_, fwdJet);
+	iEvent.getByLabel(tauJetLabel_, tauJet);
+	// iEvent.getByLabel(isoTauJetLabel_, isoTauJet);
+	iEvent.getByLabel(muonLabel_, muon);
+	iEvent.getByLabel(metLabel_, mets);
+	iEvent.getByLabel(mhtLabel_, mhts);
+	iEvent.getByLabel(hfRingsLabel_, hfRings);
+	
+	//
+	// Pass collections to setters in L1TriggerDPGEvent obj
+	// 
 	if (nonIsoEm.isValid() && isoEm.isValid())
 	{  
 		event.setEG( nonIsoEm, isoEm);   
@@ -341,6 +396,7 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	//////////////////////////////////////////////////////////////////////////////
 	// Pass L1TriggerDPGEvent object to ReducedSample to set trigger thresholds //
 	//////////////////////////////////////////////////////////////////////////////
+
 	pReducedSample->addEvent( event ); 
 
 }

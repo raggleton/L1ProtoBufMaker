@@ -1,9 +1,14 @@
 <use name="FWCore/Framework"/>
 <use name="FWCore/PluginManager"/>
 <use name="FWCore/ParameterSet"/>
-<use name="UserCode/L1TriggerDPG"/>
-<use name="L1Trigger/MenuGeneration"/>
+
 <use name="PhysicsTools/Utilities"/>
+<use name="DataFormats/L1GlobalTrigger"/>
+<use name="DataFormats/L1Trigger"/>
+
+<use name="L1Trigger/MenuGeneration"/>
+<use name="UserCode/L1TriggerDPG"/>
+<use name="UserCode/L1TriggerUpgrade"/>
 
 <include_path path="../../L1Trigger/MenuGeneration/interface"/>
 <!-- <include_path path="../../L1Trigger/MenuGeneration/interface/l1menu"/> -->
@@ -11,6 +16,6 @@
 
 <!-- <include_path path="../../UserCode/L1TriggerDPG/interface"/> -->
 
-<include_path path="interface"/>
+<!-- <include_path path="interface"/> -->
 
 <flags EDM_PLUGIN="1"/>

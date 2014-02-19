@@ -13,11 +13,12 @@ import FWCore.ParameterSet.Config as cms
 #
 
 protoBufMaker = cms.EDAnalyzer('L1ProtoBufMaker',
-    doPUWeights = cms.untracked.bool(True),
+    doPUWeights = cms.untracked.bool(False), # currently missing the PU files...
     puMCFile = cms.untracked.string(""),
     puDataFile = cms.untracked.string(""),
     puMCHist = cms.untracked.string("pileup"),
     puDataHist = cms.untracked.string("pileup"),
+    gtSource = cms.untracked.InputTag("gtDigis"),
     nonIsoEmLabel = cms.untracked.InputTag("l1extraParticles:NonIsolated"),
     isoEmLabel = cms.untracked.InputTag("l1extraParticles:Isolated"),
     tauJetLabel = cms.untracked.InputTag("l1extraParticles:Tau"),
@@ -28,7 +29,7 @@ protoBufMaker = cms.EDAnalyzer('L1ProtoBufMaker',
     mhtLabel = cms.untracked.InputTag("l1extraParticles:MHT"),
     hfRingsLabel = cms.untracked.InputTag("l1extraParticles"),
     menuFilename = cms.string("../MenuGeneration/test/L1Menu_input_std.txt"),
-    protobufFilename = cms.string("test.pb")
+    protobufFilename = cms.untracked.string("test.pb")
 )
 
 print "Loading l1protobufmaker_cfi.py"
