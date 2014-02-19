@@ -17,12 +17,18 @@ cd CMSSW_6_0_1/src
 cmsenv
 git cms-addpkg Documentation/ReferenceManualScripts
 git clone git@github.com:mark-grimes/MenuGeneration.git L1Trigger/MenuGeneration
+# add Robin's fork & branch to MenuGeneration. Will put in master branch at some point
+cd L1Trigger/MenuGeneration
+git remote add fork git@github.com:raggleton/MenuGeneration.git
+git fetch fork
+git checkout -b ProtoBufMaker fork/ProtoBufMaker
+cd ../..
 git clone git@github.com:raggleton/L1ProtoBufMaker.git L1Trigger/L1ProtoBufMaker
 export CVSROOT=:ext:<your-cern-username>@lxplus.cern.ch:/afs/cern.ch/user/c/cvscmssw/public/CMSSW
 cvs co UserCode/L1TriggerDPG
 cvs co UserCode/L1TriggerUpgrade
-cd L1Trigger
-cvs co -d UCT2015 UserCode/dasu/L1Trigger/UCT2015  # doesn't like to checkout to 2 folders deep 
+cd L1Trigger  # doesn't like to checkout to 2 folders deep 
+cvs co -d UCT2015 UserCode/dasu/L1Trigger/UCT2015
 scram b -j 6
 scram b doc
 ```
