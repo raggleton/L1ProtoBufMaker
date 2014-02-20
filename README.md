@@ -52,14 +52,14 @@ Basic flow:
 		- the L1 trigger bits for the sample
 		- the event #, run #, lumi section
 		- a `l1menu::L1TriggerDPGEvent` object, which hold information about all the jets, EGamma, etc. in an event. What's stored is defined in `UserCode/L1TriggerUpgrade/interface/L1AnalysisDataFormat.h` 
-	- This also initialises a protobuf file, and write the user-defined trigger menu to it.
+	- This also initialises a protobuf file, and writes the user-defined trigger menu to it.
 
 2. **For each event:** (`L1ProtoBufMaker::analyze()`)
 	-  Create a `l1menu::L1TriggerDPGEvent` object to store event information.
 	-  Calculate the PU weight (MC only).
 	-  Set run #, LS, event #.
-	-  Set L1 trigger bits.
-	-  Get the `l1extra` collections from the AOD. 
+	-  Set L1 trigger bits from Global Trigger.
+	-  Get the `l1extra` collections from the AOD. (Except for muons - use re-emulated muons by default form GMT.)
 	-  Fill the event object with EG/jet/muon/… information from the AOD collections. [**TODO - muons, taus, MHT properly, jet co-ords**]
 	-  Add the `L1TriggerDPGEvent` object to `ReducedSample`. This does the following:
 		- Check to see if a new `l1protobuf::Run` object is required. ( The protobuf events are stored in groups of 20000 in a  `l1protobuf::Run`, to circumvent a limit set by Google.)

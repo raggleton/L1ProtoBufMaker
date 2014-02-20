@@ -112,11 +112,11 @@ class L1ProtoBufMaker : public edm::EDAnalyzer {
 		edm::InputTag fwdJetLabel_;
 		edm::InputTag tauJetLabel_;
 		edm::InputTag isoTauJetLabel_;
+		bool doReEmulMuons_; // whether to use re emulated muons or l1extra muons
 		edm::InputTag muonLabel_; 
 		edm::InputTag metLabel_;
 		edm::InputTag mhtLabel_;
 		edm::InputTag hfRingsLabel_;
-		bool doReEmulMuons_; // whether to use re emulated muons or l1extra muons
 
 		// bool doUpgrade_;
 		// edm::InputTag tauLabel_;
@@ -163,27 +163,32 @@ L1ProtoBufMaker::L1ProtoBufMaker(const edm::ParameterSet& iConfig):
 {
 
 	// Check PU files exist, set weights if they do
-	struct stat buf;
+	LogDebug("MethodStart") << "Doing ctor: PU";
 	if (doPUWeights_)
 	{
+		struct stat buf;
 		if ((stat(puMCFile_.c_str(), &buf) != -1) && (stat(puDataFile_.c_str(), &buf) != -1)) 
 		{
 			lumiWeights_ = edm::LumiReWeighting(puMCFile_, puDataFile_, puMCHist_, puDataHist_);
+			edm::LogInfo("UserOption") << "Setup PU reweighting";
 		}
 		else 
 		{	
 			doPUWeights_ = false; // set doPUWeights_ to false, even if the user wanted them done - there's no files!
-			edm::LogWarning("L1Prompt") << "No PU reweighting inputs - not going to calculate weights"<<std::endl;
+			edm::LogWarning("MissingFile") << "No PU reweighting inputs - not going to calculate weights"<<std::endl;
 		}
 	}
+	if (!doPUWeights_)
+		edm::LogWarning("OptionOff") << "No PU reweighting"<<std::endl;
 
 	// Get trigger menu file
 	//? why init here and not in list above?
 	// TODO(Robin): Deal with this exception better - shouldn't be using std::exception!
+	LogDebug("MethodStart") << "Doing ctor: trigger menu";
 	try
 	{
 		std::string menuFilename = iConfig.getParameter<std::string>("menuFilename");
-		std::cout << "Loading menu from file " << menuFilename << std::endl;
+		edm::LogInfo("UserOption") << "Loading menu from file " << menuFilename;
 		std::unique_ptr<l1menu::TriggerMenu> pMyMenu=l1menu::tools::loadMenu( menuFilename );
 		pReducedSample = new l1menu::ReducedSample( *pMyMenu );
 	}
@@ -194,7 +199,7 @@ L1ProtoBufMaker::L1ProtoBufMaker(const edm::ParameterSet& iConfig):
 
 	// Get output protobuf file name
 	protobufFilename_ = iConfig.getUntrackedParameter<std::string>("protobufFilename","default.pb");
-
+	edm::LogInfo("UserOption") << "Output filename: " << protobufFilename_ ;
 }
 
 
@@ -215,6 +220,7 @@ L1ProtoBufMaker::~L1ProtoBufMaker()
 void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
 
+	LogDebug("MethodStart") << "Begin analyze()";
 
 	/////////////////////////////////////////////////
 	// Create & fill L1TriggerDPGEvent             //
@@ -225,6 +231,7 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	
 	// TODO(Robin): Put these in easy to comprehend methods, not in one long one!
 	l1menu::L1TriggerDPGEvent event;
+	LogDebug("EventSetup") << "Begin setting up event";
 
 	////////////////////////////////////////////////////////////////////
 	//                                                                //
@@ -242,8 +249,8 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 		iEvent.getByLabel(edm::InputTag("addPileupInfo"), puInfo);
 
 		if (puInfo.isValid()) {
+			LogDebug("PU") << "Setting PU weights";
 			std::vector<PileupSummaryInfo>::const_iterator pvi;
-
 			float tnpv = -1;
 			for(pvi = puInfo->begin(); pvi != puInfo->end(); ++pvi) 
 			{
@@ -285,7 +292,6 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 		// b) because it doesn't want to link to the UserCode library. I have no idea why.
 		
 		L1GlobalTriggerReadoutRecord const* gtrr = gtrr_handle.product();
-		// A DecisionWord is:
 		// typedef std::vector<bool> DecisionWord;
 		// See DataFormats/L1GlobalTrigger/interface/L1GlobalTriggerReadoutSetupFwd.h 
 		DecisionWord gtDecisionWord = gtrr->decisionWord(0); // Only need 0th bunch crossing - it also stores ±2 either side of 0th bx
@@ -293,11 +299,12 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	}
 	else
 	{
-
-		edm::LogWarning("MissingProduct") << "GT source invalid. L1 Trigger Bits not set!" << std::endl;
+		edm::LogWarning("MissingProduct") << "GT source invalid. L1 Trigger Bits all set false!" << std::endl;
 	}
 
 	event.setL1Bits(PhysicsBits);
+
+	LogDebug("EventSetup") << "Finished setting up PU, event#, trigger bits";
 
 	/////////////////////////////////////////
 	//                                     //
@@ -312,8 +319,6 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	edm::Handle<l1extra::L1JetParticleCollection> fwdJet;
 	edm::Handle<l1extra::L1JetParticleCollection> tauJet;
 	edm::Handle<l1extra::L1JetParticleCollection> isoTauJet;
-	edm::Handle<l1extra::L1MuonParticleCollection> muon;
-	edm::Handle<L1MuGMTReadoutCollection> reEmulMuon;
 	edm::Handle<l1extra::L1EtMissParticleCollection> mets;
 	edm::Handle<l1extra::L1EtMissParticleCollection> mhts;
 	edm::Handle<l1extra::L1HFRingsCollection> hfRings ;
@@ -333,6 +338,10 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	//
 	// Pass collections to setters in L1TriggerDPGEvent obj
 	// 
+	
+	LogDebug("EventFilling") << "Start filling event with collection info";
+
+	LogDebug("EventFilling") << "Doing EG";
 	if (nonIsoEm.isValid() && isoEm.isValid())
 	{  
 		event.setEG( nonIsoEm, isoEm);   
@@ -342,6 +351,7 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 		edm::LogWarning("MissingProduct") << "L1Extra Iso Em or Non Iso EM not found. Branch will not be filled" << std::endl;
 	}
 	
+	LogDebug("EventFilling") << "Doing Jets";
 	if (cenJet.isValid() && fwdJet.isValid())
 	{
 		event.setJets( cenJet, fwdJet );
@@ -350,18 +360,19 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	{
 		edm::LogWarning("MissingProduct") << "L1Extra cen Jet or fwd jet not found. Branch will not be filled" << std::endl;
 	}
-	
 
 	// TESTING - COME BACK TO ISO/NON ISO TAUS LATER
-	if (tauJet.isValid())
-	{
-		event.setTaus( tauJet, isoTauJet );   
-	} 
-	else 
-	{
-		edm::LogWarning("MissingProduct") << "L1Extra Non Iso tau jets not found. Branch will not be filled" << std::endl;
-	}
+	// LogDebug("EventFilling") << "Doing Taus";
+	// if (tauJet.isValid())
+	// {
+	// 	event.setTaus( tauJet, isoTauJet );   
+	// } 
+	// else 
+	// {
+	// 	edm::LogWarning("MissingProduct") << "L1Extra Non Iso tau jets not found. Branch will not be filled" << std::endl;
+	// }
 	
+	LogDebug("EventFilling") << "Doing MET";
 	if (mets.isValid())
 	{
 		event.setETSums( mets ); //ETT, ETM, PhiETM, HTT, HTM, PhiHTM
@@ -371,6 +382,7 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 		edm::LogWarning("MissingProduct") << "L1Extra mets not found. Branch will not be filled" << std::endl;
 	}
 
+	LogDebug("EventFilling") << "Doing MHT";
 	if (mhts.isValid())
 	{
 		event.setHTSums( mhts ); //ETT, ETM, PhiETM, HTT, HTM, PhiHTM
@@ -380,6 +392,7 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 		edm::LogWarning("MissingProduct") << "L1Extra mhts not found. Branch will not be filled" << std::endl;
 	}
 
+	// LogDebug("EventFilling") << "Doing HFRings";
 	// if (hfRings.isValid())
 	// {
 	//   event.setHFring( hfRings ); //ETT, ETM, PhiETM, HTT, HTM, PhiHTM
@@ -389,26 +402,43 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	//   edm::LogWarning("MissingProduct") << "L1Extra hfRings not found. Branch will not be filled" << std::endl;
 	// } 
 
-
+	LogDebug("EventFilling") << "Doing Muons";
+	edm::Handle<l1extra::L1MuonParticleCollection> muon;
+	// edm::Handle<L1MuGMTReadoutCollection> reEmulMuon;
+	edm::Handle<L1GlobalTriggerReadoutRecord> reEmulMuon;
 	if (doReEmulMuons_) 
+	{	
+		edm::LogInfo("UserOption") << "Using GMT re-emulated muons, not L1Extra";
 		iEvent.getByLabel(muonLabel_, reEmulMuon); // use L1MuGMTReadoutCollection handle
+		if (reEmulMuon.isValid())
+		{
+			// event.setMuons( reEmulMuon );
+		}
+		else
+		{
+			edm::LogWarning("MissingProduct") << "GMT Muons not found. Branch will not be filled" << std::endl;
+		}
+		
+	}
 	else  
+	{
+		edm::LogInfo("UserOption") << "Using L1Extra muons, not GMT re-emulated";
 		iEvent.getByLabel(muonLabel_, muon); // use l1extra collection handle
-
-	if (muon.isValid())
-	{
-		event.setMuons( muon );
+		if (muon.isValid())
+		{
+			event.setMuons( muon );
+		}
+		else
+		{
+			edm::LogWarning("MissingProduct") << "L1 Extra Muons not found. Branch will not be filled" << std::endl;
+		}
 	}
-	else
-	{
-		edm::LogWarning("MissingProduct") << "Muons not found. Branch will not be filled" << std::endl;
-	}
-	 
+	
 	//////////////////////////////////////////////////////////////////////////////
 	// Pass L1TriggerDPGEvent object to ReducedSample to set trigger thresholds //
 	//////////////////////////////////////////////////////////////////////////////
 
-	pReducedSample->addEvent( event ); 
+	// pReducedSample->addEvent( event ); 
 
 }
 
@@ -427,7 +457,7 @@ void L1ProtoBufMaker::endJob()
 	
 	try
 	{
-		pReducedSample->saveToFile( protobufFilename_ );
+		// pReducedSample->saveToFile( protobufFilename_ );
 		std::cout << "Saving protobuf file to " << protobufFilename_ << std::endl;
 	}
 	catch( std::exception& error )
