@@ -14,7 +14,7 @@ import FWCore.ParameterSet.Config as cms
 
 protoBufMaker = cms.EDAnalyzer('L1ProtoBufMaker',
     doPUWeights      = cms.untracked.bool(False), # currently missing the PU files...
-    puMCFile         = cms.untracked.string(""),
+    puMCFile         = cms.untracked.string("PUHistS10.root"),
     puDataFile       = cms.untracked.string(""),
     puMCHist         = cms.untracked.string("pileup"), # Hist name in files above
     puDataHist       = cms.untracked.string("pileup"),
@@ -22,6 +22,7 @@ protoBufMaker = cms.EDAnalyzer('L1ProtoBufMaker',
     nonIsoEmLabel    = cms.untracked.InputTag("l1extraParticles:NonIsolated"),
     isoEmLabel       = cms.untracked.InputTag("l1extraParticles:Isolated"),
     tauJetLabel      = cms.untracked.InputTag("l1extraParticles:Tau"),
+    isoTauJetLabel   = cms.untracked.InputTag("none"), # set to "none" if you don't want any isolation testing
     cenJetLabel      = cms.untracked.InputTag("l1extraParticles:Central"),
     fwdJetLabel      = cms.untracked.InputTag("l1extraParticles:Forward"),
     doReEmulMuons    = cms.untracked.bool(False), # whether to use re emulated muons from GMT, or use l1extra muons. Use former until simulation in place.

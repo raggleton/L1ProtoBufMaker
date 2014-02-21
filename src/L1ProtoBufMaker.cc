@@ -154,7 +154,7 @@ L1ProtoBufMaker::L1ProtoBufMaker(const edm::ParameterSet& iConfig):
 	cenJetLabel_(iConfig.getUntrackedParameter("cenJetLabel",edm::InputTag("l1extraParticles:Central"))),
 	fwdJetLabel_(iConfig.getUntrackedParameter("fwdJetLabel",edm::InputTag("l1extraParticles:Forward"))),
 	tauJetLabel_(iConfig.getUntrackedParameter("tauJetLabel",edm::InputTag("l1extraParticles:Tau"))),
-	isoTauJetLabel_(iConfig.getUntrackedParameter("isoTauJetLabel",edm::InputTag("l1extraParticles:Tau"))),
+	isoTauJetLabel_(iConfig.getUntrackedParameter("isoTauJetLabel",edm::InputTag("none"))),
 	doReEmulMuons_(iConfig.getUntrackedParameter("doReEmulMuons",true)),
 	muonLabel_(iConfig.getUntrackedParameter("muonLabel",edm::InputTag("gtDigis"))),
 	metLabel_(iConfig.getUntrackedParameter("metLabel",edm::InputTag("l1extraParticles:MET"))),
@@ -312,36 +312,18 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	//                                     //
 	/////////////////////////////////////////
 
-	// Get L1Extra collections from the event 
-	edm::Handle<l1extra::L1EmParticleCollection> isoEm;
-	edm::Handle<l1extra::L1EmParticleCollection> nonIsoEm;
-	edm::Handle<l1extra::L1JetParticleCollection> cenJet;
-	edm::Handle<l1extra::L1JetParticleCollection> fwdJet;
-	edm::Handle<l1extra::L1JetParticleCollection> tauJet;
-	edm::Handle<l1extra::L1JetParticleCollection> isoTauJet;
-	edm::Handle<l1extra::L1EtMissParticleCollection> mets;
-	edm::Handle<l1extra::L1EtMissParticleCollection> mhts;
-	edm::Handle<l1extra::L1HFRingsCollection> hfRings ;
-
-	iEvent.getByLabel(isoEmLabel_, isoEm);
-	iEvent.getByLabel(nonIsoEmLabel_, nonIsoEm);
-	iEvent.getByLabel(cenJetLabel_, cenJet);
-	iEvent.getByLabel(fwdJetLabel_, fwdJet);
-	iEvent.getByLabel(tauJetLabel_, tauJet);
-	// iEvent.getByLabel(isoTauJetLabel_, isoTauJet);
-	iEvent.getByLabel(metLabel_, mets);
-	iEvent.getByLabel(mhtLabel_, mhts);
-	iEvent.getByLabel(hfRingsLabel_, hfRings);
-	// Muons done below
-
-
 	//
+	// Get L1Extra collections from the event 
 	// Pass collections to setters in L1TriggerDPGEvent obj
 	// 
 	
 	LogDebug("EventFilling") << "Start filling event with collection info";
 
 	LogDebug("EventFilling") << "Doing EG";
+	edm::Handle<l1extra::L1EmParticleCollection> isoEm;
+	edm::Handle<l1extra::L1EmParticleCollection> nonIsoEm;
+	iEvent.getByLabel(isoEmLabel_, isoEm);
+	iEvent.getByLabel(nonIsoEmLabel_, nonIsoEm);
 	if (nonIsoEm.isValid() && isoEm.isValid())
 	{  
 		event.setEG( nonIsoEm, isoEm);   
@@ -351,7 +333,12 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 		edm::LogWarning("MissingProduct") << "L1Extra Iso Em or Non Iso EM not found. Branch will not be filled" << std::endl;
 	}
 	
+
 	LogDebug("EventFilling") << "Doing Jets";
+	edm::Handle<l1extra::L1JetParticleCollection> cenJet;
+	edm::Handle<l1extra::L1JetParticleCollection> fwdJet;
+	iEvent.getByLabel(cenJetLabel_, cenJet);
+	iEvent.getByLabel(fwdJetLabel_, fwdJet);
 	if (cenJet.isValid() && fwdJet.isValid())
 	{
 		event.setJets( cenJet, fwdJet );
@@ -361,18 +348,30 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 		edm::LogWarning("MissingProduct") << "L1Extra cen Jet or fwd jet not found. Branch will not be filled" << std::endl;
 	}
 
-	// TESTING - COME BACK TO ISO/NON ISO TAUS LATER
-	// LogDebug("EventFilling") << "Doing Taus";
-	// if (tauJet.isValid())
-	// {
-	// 	event.setTaus( tauJet, isoTauJet );   
-	// } 
-	// else 
-	// {
-	// 	edm::LogWarning("MissingProduct") << "L1Extra Non Iso tau jets not found. Branch will not be filled" << std::endl;
-	// }
+
+	LogDebug("EventFilling") << "Doing Taus";
+	edm::Handle<l1extra::L1JetParticleCollection> tauJet;
+	edm::Handle<l1extra::L1JetParticleCollection> isoTauJet;
+	iEvent.getByLabel(tauJetLabel_, tauJet);
+	if (tauJet.isValid())
+	{
+		if ( isoTauJetLabel_.label() != "none" )
+		{
+			iEvent.getByLabel(isoTauJetLabel_, isoTauJet);
+			if (!isoTauJet.isValid())
+				edm::LogWarning("MissingProduct") << "L1Extra iso tau jets not found. Branch will not be filled" << std::endl;
+		}
+		event.setTaus( tauJet, isoTauJet );   
+	} 
+	else 
+	{
+		edm::LogWarning("MissingProduct") << "L1Extra non-iso tau jets not found. Branch will not be filled" << std::endl;
+	}	
+
 	
 	LogDebug("EventFilling") << "Doing MET";
+	edm::Handle<l1extra::L1EtMissParticleCollection> mets;
+	iEvent.getByLabel(metLabel_, mets);
 	if (mets.isValid())
 	{
 		event.setETSums( mets ); //ETT, ETM, PhiETM, HTT, HTM, PhiHTM
@@ -382,7 +381,10 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 		edm::LogWarning("MissingProduct") << "L1Extra mets not found. Branch will not be filled" << std::endl;
 	}
 
+
 	LogDebug("EventFilling") << "Doing MHT";
+	edm::Handle<l1extra::L1EtMissParticleCollection> mhts;
+	iEvent.getByLabel(mhtLabel_, mhts);
 	if (mhts.isValid())
 	{
 		event.setHTSums( mhts ); //ETT, ETM, PhiETM, HTT, HTM, PhiHTM
@@ -392,7 +394,10 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 		edm::LogWarning("MissingProduct") << "L1Extra mhts not found. Branch will not be filled" << std::endl;
 	}
 
+
 	// LogDebug("EventFilling") << "Doing HFRings";
+	// edm::Handle<l1extra::L1HFRingsCollection> hfRings;
+	// iEvent.getByLabel(hfRingsLabel_, hfRings);
 	// if (hfRings.isValid())
 	// {
 	//   event.setHFring( hfRings ); //ETT, ETM, PhiETM, HTT, HTM, PhiHTM
@@ -402,10 +407,11 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	//   edm::LogWarning("MissingProduct") << "L1Extra hfRings not found. Branch will not be filled" << std::endl;
 	// } 
 
+
 	LogDebug("EventFilling") << "Doing Muons";
 	edm::Handle<l1extra::L1MuonParticleCollection> muon;
-	// edm::Handle<L1MuGMTReadoutCollection> reEmulMuon;
-	edm::Handle<L1GlobalTriggerReadoutRecord> reEmulMuon;
+	edm::Handle<L1MuGMTReadoutCollection> reEmulMuon;
+	// edm::Handle<L1GlobalTriggerReadoutRecord> reEmulMuon;
 	if (doReEmulMuons_) 
 	{	
 		edm::LogInfo("UserOption") << "Using GMT re-emulated muons, not L1Extra";

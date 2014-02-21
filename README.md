@@ -9,6 +9,14 @@ More on protocol buffers:
 
 (https://developers.google.com/protocol-buffers/docs/overview)
 
+## TODO
+
+- Fix adding muons from re-emulated GMT. Issue with getting from AOD
+- Implement HFRings?
+- Tidy up passing to setters in L1TriggerDPGEvent (need refs/pointers)
+- Duplicate removal
+- Testing!
+
 ##Installation instructions
 
 ```
@@ -59,8 +67,8 @@ Basic flow:
 	-  Calculate the PU weight (MC only).
 	-  Set run #, LS, event #.
 	-  Set L1 trigger bits from Global Trigger.
-	-  Get the `l1extra` collections from the AOD. (Except for muons - use re-emulated muons by default form GMT.)
-	-  Fill the event object with EG/jet/muon/… information from the AOD collections. [**TODO - muons, taus, MHT properly, jet co-ords**]
+	-  Get the `l1extra` collections from the AOD. (Except for muons - can also use re-emulated muons from GMT **TODO-fix**.)
+	-  Fill the event object with EG/jet/muon/… information from the AOD collections. [**TODO - muons**]
 	-  Add the `L1TriggerDPGEvent` object to `ReducedSample`. This does the following:
 		- Check to see if a new `l1protobuf::Run` object is required. ( The protobuf events are stored in groups of 20000 in a  `l1protobuf::Run`, to circumvent a limit set by Google.)
 		-  Make a new `l1protobuf::Event` object to store the trigger thresholds in.
