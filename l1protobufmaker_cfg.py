@@ -51,7 +51,11 @@ process.source = cms.Source("PoolSource",
 # This one produces extra l1extra particles from digis ??
 # process.load("L1Trigger.Configuration.L1Extra_cff")
 
-# Load L1ProtoBufMaker module, and override some default settings
+# Load L1ProtoBufMaker module, and override some default setti
+process.eca= cms.EDAnalyzer("EventContentAnalyzer"
+   # getData = cms.untracked.bool(True),
+   # listContent = cms.untracked.bool(False)
+)
 process.load("L1Trigger.L1ProtoBufMaker.l1protobufmaker_cfi")
 process.protoBufMaker.doPUWeights      = cms.untracked.bool(False)
 process.protoBufMaker.puMCFile         = cms.untracked.string("data/PUHistS10.root")
@@ -60,10 +64,11 @@ process.protoBufMaker.puMCHist         = cms.untracked.string("pileup")
 process.protoBufMaker.puDataHist       = cms.untracked.string("pileup")
 process.protoBufMaker.isoTauJetLabel   = cms.untracked.InputTag("none")
 process.protoBufMaker.doReEmulMuons    = cms.untracked.bool(False)
-process.protoBufMaker.muonLabel        = cms.untracked.InputTag("l1extraParticles") # gtDigis | l1ExtraParticles
+process.protoBufMaker.muonLabel        = cms.untracked.InputTag("l1extraParticles") # gtDigis | l1extraParticles
 process.protoBufMaker.protobufFilename = cms.untracked.string("myTest.pb")
 
 process.p = cms.Path(
 	# process.RawToDigi +
+	# process.eca +
 	process.protoBufMaker
-	)
+)

@@ -208,7 +208,7 @@ L1ProtoBufMaker::~L1ProtoBufMaker()
  
 	// do anything here that needs to be done at desctruction time
 	// (e.g. close files, deallocate resources etc.)
-
+	delete pReducedSample;
 }
 
 
@@ -410,15 +410,15 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
 	LogDebug("EventFilling") << "Doing Muons";
 	edm::Handle<l1extra::L1MuonParticleCollection> muon;
-	edm::Handle<L1MuGMTReadoutCollection> reEmulMuon;
-	// edm::Handle<L1GlobalTriggerReadoutRecord> reEmulMuon;
+	// edm::Handle<L1MuGMTReadoutCollection> reEmulMuon;
+	edm::Handle<L1GlobalTriggerReadoutRecord> reEmulMuon;
 	if (doReEmulMuons_) 
 	{	
-		edm::LogInfo("UserOption") << "Using GMT re-emulated muons, not L1Extra";
+		LogDebug("UserOption") << "Using GMT re-emulated muons, not L1Extra";
 		iEvent.getByLabel(muonLabel_, reEmulMuon); // use L1MuGMTReadoutCollection handle
 		if (reEmulMuon.isValid())
 		{
-			// event.setMuons( reEmulMuon );
+			event.setMuons( reEmulMuon );
 		}
 		else
 		{
@@ -428,7 +428,7 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	}
 	else  
 	{
-		edm::LogInfo("UserOption") << "Using L1Extra muons, not GMT re-emulated";
+		LogDebug("UserOption") << "Using L1Extra muons, not GMT re-emulated";
 		iEvent.getByLabel(muonLabel_, muon); // use l1extra collection handle
 		if (muon.isValid())
 		{
