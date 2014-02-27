@@ -3,12 +3,12 @@ import FWCore.ParameterSet.Config as cms
 # Robin Aggleton 18/2/14, robin.aggleton@cern.ch
 #
 # Default configuration for L1ProtoBufMaker EDAnalyzer
+# This uses the original L1Extra collections for everything except muons, which uses re-emulated GMT muon collection (case 2 according to Brian's scheme)
+#
 # Include this in your _cfg.py file by adding:
-# 
 # process.load("L1Trigger.L1ProtoBufMaker.l1ProtoBufMaker_cfi")
 #
 # Override default options with statements like:
-# 
 # processs.l1ProtoBufMaker.protobufFilename = cms.string("myFile.pb")
 #
 
@@ -19,10 +19,10 @@ l1ProtoBufMaker = cms.EDAnalyzer('L1ProtoBufMaker',
     puMCHist         = cms.untracked.string("pileup"), # Hist name in files above
     puDataHist       = cms.untracked.string("pileup"),
     gtSource         = cms.untracked.InputTag("gtDigis"), # For L1 Global Trigger bits
-    nonIsoEmLabel    = cms.untracked.InputTag("l1extraParticles:NonIsolated"),
-    isoEmLabel       = cms.untracked.InputTag("l1extraParticles:Isolated"),
-    tauJetLabel      = cms.untracked.InputTag("l1extraParticles:Tau"),
-    isoTauJetLabel   = cms.untracked.InputTag("none"), # set to "none" if you don't want any isolation testing
+    egLabel          = cms.untracked.InputTag("l1extraParticles:NonIsolated"),
+    isoEGLabel       = cms.untracked.InputTag("l1extraParticles:Isolated"),
+    tauLabel         = cms.untracked.InputTag("l1extraParticles:Tau"),
+    isoTauLabel      = cms.untracked.InputTag("none"), # set to "none" if you don't want any isolation testing
     cenJetLabel      = cms.untracked.InputTag("l1extraParticles:Central"),
     fwdJetLabel      = cms.untracked.InputTag("l1extraParticles:Forward"),
     doReEmulMuons    = cms.untracked.bool(True), # whether to use re emulated muons from GMT, or use l1extra muons. Use former until simulation in place.

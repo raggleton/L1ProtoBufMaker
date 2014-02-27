@@ -88,11 +88,10 @@ class L1ProtoBufMaker : public edm::EDAnalyzer {
 		// virtual void beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&);
 		// virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&);
 
-	public:
-		
-		l1menu::ReducedSample * pReducedSample; // reduced sample for getting trigger thresholds, etc
 
 	private:
+		l1menu::ReducedSample * pReducedSample; // reduced sample for getting trigger thresholds, etc
+
 		// For PU weights:
 		bool doPUWeights_;
 		std::string puMCFile_;
@@ -106,12 +105,12 @@ class L1ProtoBufMaker : public edm::EDAnalyzer {
 
 		// To read in AOD file:
 		// EDM input tags
-		edm::InputTag isoEmLabel_;
-		edm::InputTag nonIsoEmLabel_;
+		edm::InputTag egLabel_;
+		edm::InputTag isoEGLabel_;
 		edm::InputTag cenJetLabel_;
 		edm::InputTag fwdJetLabel_;
-		edm::InputTag tauJetLabel_;
-		edm::InputTag isoTauJetLabel_;
+		edm::InputTag tauLabel_;
+		edm::InputTag isoTauLabel_;
 		bool doReEmulMuons_; // whether to use re emulated muons or l1extra muons
 		edm::InputTag muonLabel_; 
 		edm::InputTag metLabel_;
@@ -149,12 +148,12 @@ L1ProtoBufMaker::L1ProtoBufMaker(const edm::ParameterSet& iConfig):
 	puMCHist_(iConfig.getUntrackedParameter<std::string>("puMCHist","pileup")),
 	puDataHist_(iConfig.getUntrackedParameter<std::string>("puDataHist","pileup")),
 	gtSource_(iConfig.getUntrackedParameter("gtSource",edm::InputTag("gtDigis"))),
-	isoEmLabel_(iConfig.getUntrackedParameter("isoEmLabel",edm::InputTag("l1extraParticles:Isolated"))),
-	nonIsoEmLabel_(iConfig.getUntrackedParameter("nonIsoEmLabel",edm::InputTag("l1extraParticles:NonIsolated"))), 
+	egLabel_(iConfig.getUntrackedParameter("egLabel",edm::InputTag("l1extraParticles:NonIsolated"))), 
+	isoEGLabel_(iConfig.getUntrackedParameter("isoEGLabel",edm::InputTag("l1extraParticles:Isolated"))),
 	cenJetLabel_(iConfig.getUntrackedParameter("cenJetLabel",edm::InputTag("l1extraParticles:Central"))),
 	fwdJetLabel_(iConfig.getUntrackedParameter("fwdJetLabel",edm::InputTag("l1extraParticles:Forward"))),
-	tauJetLabel_(iConfig.getUntrackedParameter("tauJetLabel",edm::InputTag("l1extraParticles:Tau"))),
-	isoTauJetLabel_(iConfig.getUntrackedParameter("isoTauJetLabel",edm::InputTag("none"))),
+	tauLabel_(iConfig.getUntrackedParameter("tauLabel",edm::InputTag("l1extraParticles:Tau"))),
+	isoTauLabel_(iConfig.getUntrackedParameter("isoTauLabel",edm::InputTag("none"))),
 	doReEmulMuons_(iConfig.getUntrackedParameter("doReEmulMuons",true)),
 	muonLabel_(iConfig.getUntrackedParameter("muonLabel",edm::InputTag("gtDigis"))),
 	metLabel_(iConfig.getUntrackedParameter("metLabel",edm::InputTag("l1extraParticles:MET"))),
@@ -320,13 +319,13 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	LogDebug("EventFilling") << "Start filling event with collection info";
 
 	LogDebug("EventFilling") << "Doing EG";
-	edm::Handle<l1extra::L1EmParticleCollection> isoEm;
-	edm::Handle<l1extra::L1EmParticleCollection> nonIsoEm;
-	iEvent.getByLabel(isoEmLabel_, isoEm);
-	iEvent.getByLabel(nonIsoEmLabel_, nonIsoEm);
-	if (nonIsoEm.isValid() && isoEm.isValid())
+	edm::Handle<l1extra::L1EmParticleCollection> isoEG;
+	edm::Handle<l1extra::L1EmParticleCollection> nonIsoEG;
+	iEvent.getByLabel(isoEGLabel_, isoEG);
+	iEvent.getByLabel(egLabel_, nonIsoEG);
+	if (nonIsoEG.isValid() && isoEG.isValid())
 	{  
-		event.setEG( nonIsoEm, isoEm);   
+		event.setEG( nonIsoEG, isoEG);   
 	} 
 	else 
 	{
@@ -350,18 +349,18 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
 
 	LogDebug("EventFilling") << "Doing Taus";
-	edm::Handle<l1extra::L1JetParticleCollection> tauJet;
-	edm::Handle<l1extra::L1JetParticleCollection> isoTauJet;
-	iEvent.getByLabel(tauJetLabel_, tauJet);
-	if (tauJet.isValid())
+	edm::Handle<l1extra::L1JetParticleCollection> tau;
+	edm::Handle<l1extra::L1JetParticleCollection> isoTau;
+	iEvent.getByLabel(tauLabel_, tau);
+	if (tau.isValid())
 	{
-		if ( isoTauJetLabel_.label() != "none" )
+		if ( isoTauLabel_.label() != "none" )
 		{
-			iEvent.getByLabel(isoTauJetLabel_, isoTauJet);
-			if (!isoTauJet.isValid())
+			iEvent.getByLabel(isoTauLabel_, isoTau);
+			if (!isoTau.isValid())
 				edm::LogWarning("MissingProduct") << "L1Extra iso tau jets not found. Branch will not be filled" << std::endl;
 		}
-		event.setTaus( tauJet, isoTauJet );   
+		event.setTaus( tau, isoTau );   
 	} 
 	else 
 	{
