@@ -5,14 +5,14 @@ import FWCore.ParameterSet.Config as cms
 # Default configuration for L1ProtoBufMaker EDAnalyzer
 # Include this in your _cfg.py file by adding:
 # 
-# process.load("L1Trigger.L1ProtoBufMaker.l1protobufmaker_cfi")
+# process.load("L1Trigger.L1ProtoBufMaker.l1ProtoBufMaker_cfi")
 #
 # Override default options with statements like:
 # 
-# processs.protoBufMaker.protobufFilename = cms.string("myFile.pb")
+# processs.l1ProtoBufMaker.protobufFilename = cms.string("myFile.pb")
 #
 
-protoBufMaker = cms.EDAnalyzer('L1ProtoBufMaker',
+l1ProtoBufMaker = cms.EDAnalyzer('L1ProtoBufMaker',
     doPUWeights      = cms.untracked.bool(False), # currently missing the PU files...
     puMCFile         = cms.untracked.string("PUHistS10.root"),
     puDataFile       = cms.untracked.string(""),
@@ -30,8 +30,8 @@ protoBufMaker = cms.EDAnalyzer('L1ProtoBufMaker',
     metLabel         = cms.untracked.InputTag("l1extraParticles:MET"),
     mhtLabel         = cms.untracked.InputTag("l1extraParticles:MHT"),
     hfRingsLabel     = cms.untracked.InputTag("l1extraParticles"), # Not used at the moment
-    menuFilename     = cms.string("../MenuGeneration/test/L1Menu_input_std.txt"), # Trigger menu input file
+    menuFilename     = cms.string("/storage/phrca/L1Menu/CMSSW_6_1_2_SLHC2/src/L1Trigger/MenuGeneration/test/L1Menu_input_std.txt"), # Trigger menu input file
     protobufFilename = cms.untracked.string("test.pb") # Output protobuf file
 )
 
-print "Loading L1ProtoBufMaker defaults from l1protobufmaker_cfi.py"
+print "Loading L1ProtoBufMaker defaults from l1ProtoBufMaker_cfi.py"
