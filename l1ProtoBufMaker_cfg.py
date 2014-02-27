@@ -3,72 +3,82 @@ import FWCore.ParameterSet.Config as cms
 #
 # Robin Aggleton 18/2/14, robin.aggleton@cern.ch
 # 
-# Simple config file to produce protocol buffer from input AOD
+# Simple config file to produce protocol buffer from input GEN+SIM+DIGI+RAW
 #
 
-process = cms.Process("L1ProtoBufMaker")
+# process = cms.Process("L1ProtoBufMaker")
 
-process.load("FWCore.MessageService.MessageLogger_cfi")
 # process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
 # If you do want debug messages, compile with
 # scram b -j8 USER_CXXFLAGS="-DEDM_ML_DEBUG"
 # may need to do scram b clean first
-process.MessageLogger = cms.Service("MessageLogger",
-					destinations = cms.untracked.vstring('cout'),
-					categories   = cms.untracked.vstring('*'),
-					debugModules = cms.untracked.vstring('*'),
-					cout         = cms.untracked.PSet(
-						threshold = cms.untracked.string('DEBUG') 
-						)
-)
+# process.MessageLogger = cms.Service("MessageLogger",
+# 					destinations = cms.untracked.vstring('cout'),
+# 					categories   = cms.untracked.vstring('*'),
+# 					debugModules = cms.untracked.vstring('*'),
+# 					cout         = cms.untracked.PSet(
+# 						threshold = cms.untracked.string('DEBUG') 
+# 						)
+# )
+# 
+from UserCode.L1TriggerUpgrade.l1CurrentNtupleFromRAW import *
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10) )
+from L1Trigger.L1ProtoBufMaker.MCSetup import *
+mcSetup(process, False, False)
 
-process.source = cms.Source("PoolSource",
-    # replace with the source file you want to use
-    fileNames = cms.untracked.vstring(
-        'file:../MinBias_TuneZ2star_8TeV-pythia6_PU_S10_START53_V7A-v1_AODSIM.root'
-        # 'file:../MinBias_TuneZ2star_8TeV-pythia6_GEN-SIM_START50_V13-v3.root'
-        # 'file:../ZeroBias1_Run2012A-v1_RAW.root'
+# from L1Trigger.Configuration.ValL1Emulator_cff import *
+
+# Remove everything except the re emulation producer (ValL1Emulator) & l1Extra particle producer (l1extraParticles)
+process.p.remove(process.l1NtupleProducer)
+process.p.remove(process.l1GtTriggerMenuLite)
+process.p.remove(process.l1MenuTreeProducer)
+# process.p.remove(process.l1extraParticles)
+process.p.remove(process.l1ExtraTreeProducer)
+process.p.remove(process.L1EmulatorTree)
+process.p.insert(2,process.ValL1Emulator)
+
+# Add in l1ProtoBufMaker module
+process.load("L1Trigger.L1ProtoBufMaker.l1ProtoBufMaker_cfi")
+process.l1ProtoBufMaker.doPUWeights      = cms.untracked.bool(False)
+process.l1ProtoBufMaker.puMCFile         = cms.untracked.string("data/PUHistS10.root")
+process.l1ProtoBufMaker.puDataFile       = cms.untracked.string("") # need filename here!
+process.l1ProtoBufMaker.puMCHist         = cms.untracked.string("pileup")
+process.l1ProtoBufMaker.puDataHist       = cms.untracked.string("pileup")
+process.l1ProtoBufMaker.isoTauJetLabel   = cms.untracked.InputTag("none")
+process.l1ProtoBufMaker.doReEmulMuons    = cms.untracked.bool(True)
+process.l1ProtoBufMaker.muonLabel        = cms.untracked.InputTag("valGmtDigis") # valGmtDigis | l1extraParticles
+# process.l1ProtoBufMaker.menuFilename     = cms.string("myTest.txt")
+process.l1ProtoBufMaker.protobufFilename = cms.untracked.string("myTest.pb")
+process.p *= process.l1ProtoBufMaker
+
+# job options
+process.maxEvents = cms.untracked.PSet(
+    input = cms.untracked.int32(1)
     )
-)
 
-# analysis path
-# import of standard configurations
-# process.load('Configuration/StandardSequences/Services_cff')
-# process.load('Configuration/StandardSequences/GeometryIdeal_cff')
-# process.load('Configuration/StandardSequences/MagneticField_38T_cff')
-# process.load('Configuration/StandardSequences/SimL1Emulator_cff')
-# process.load("Configuration.StandardSequences.RawToDigi_cff")
-# process.load('Configuration/StandardSequences/EndOfProcess_cff')
-# process.load('Configuration/StandardSequences/FrontierConditions_GlobalTag_cff')
-# process.load('Configuration/EventContent/EventContent_cff')
-# process.load('Configuration.StandardSequences.Reconstruction_cff')
+# process.TFileService.fileName = cms.string('l1Tree_test.root') 
+process.p.remove(process.TFileService)
 
-# process.GlobalTag.globaltag = 'GR_R_52_V7::All'
+readFiles.extend( [
+        '/store/mc/Summer12/Neutrino_Pt2to20_gun/GEN-SIM-DIGI-RAW/UpgradeL1TDR-PU35_POSTLS161_V12-v2/00000/168A4B24-C53C-E211-A370-003048C68AA6.root'
+        ] )
 
-# This one produces extra l1extra particles from digis ??
-# process.load("L1Trigger.Configuration.L1Extra_cff")
+# Debug stuff
+process.output = cms.OutputModule(
+   "PoolOutputModule",
+   outputCommands = cms.untracked.vstring('keep *'),
+   fileName = cms.untracked.string('output.root')
+   )
+process.e = cms.EndPath(process.output)
 
-# Load L1ProtoBufMaker module, and override some default setti
-process.eca= cms.EDAnalyzer("EventContentAnalyzer"
-   # getData = cms.untracked.bool(True),
-   # listContent = cms.untracked.bool(False)
-)
-process.load("L1Trigger.L1ProtoBufMaker.l1protobufmaker_cfi")
-process.protoBufMaker.doPUWeights      = cms.untracked.bool(False)
-process.protoBufMaker.puMCFile         = cms.untracked.string("data/PUHistS10.root")
-process.protoBufMaker.puDataFile       = cms.untracked.string("") # need filename here!
-process.protoBufMaker.puMCHist         = cms.untracked.string("pileup")
-process.protoBufMaker.puDataHist       = cms.untracked.string("pileup")
-process.protoBufMaker.isoTauJetLabel   = cms.untracked.InputTag("none")
-process.protoBufMaker.doReEmulMuons    = cms.untracked.bool(False)
-process.protoBufMaker.muonLabel        = cms.untracked.InputTag("l1extraParticles") # gtDigis | l1extraParticles
-process.protoBufMaker.protobufFilename = cms.untracked.string("myTest.pb")
+file = open("l1CurrentNtupleFromGENRAW_cfg.py",'w')
+file.write(str(process.dumpPython()))
+file.close()
 
-process.p = cms.Path(
-	# process.RawToDigi +
-	# process.eca +
-	process.protoBufMaker
-)
+#process.load("L1TriggerConfig.GctConfigProducers.l1GctConfigDump_cfi")
+#process.MessageLogger.cout.placeholder = cms.untracked.bool(False)
+#process.MessageLogger.cout.threshold = cms.untracked.string('DEBUG')
+#process.MessageLogger.debugModules = cms.untracked.vstring('l1GctConfigDump')
+#process.p += ( process.l1GctConfigDump )
+

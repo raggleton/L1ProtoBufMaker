@@ -178,8 +178,8 @@ L1ProtoBufMaker::L1ProtoBufMaker(const edm::ParameterSet& iConfig):
 			edm::LogWarning("MissingFile") << "No PU reweighting inputs - not going to calculate weights"<<std::endl;
 		}
 	}
-	if (!doPUWeights_)
-		edm::LogWarning("OptionOff") << "No PU reweighting"<<std::endl;
+	else
+		edm::LogWarning("OptionOff") << "No PU reweighting inputs - not going to calculate weights"<<std::endl;
 
 	// Get trigger menu file
 	//? why init here and not in list above?
@@ -195,6 +195,7 @@ L1ProtoBufMaker::L1ProtoBufMaker(const edm::ParameterSet& iConfig):
 	catch( std::exception& error )
 	{
 		std::cerr << "Exception caught: " << error.what() << std::endl;
+		exit(2);
 	}
 
 	// Get output protobuf file name
@@ -208,7 +209,6 @@ L1ProtoBufMaker::~L1ProtoBufMaker()
  
 	// do anything here that needs to be done at desctruction time
 	// (e.g. close files, deallocate resources etc.)
-	delete pReducedSample;
 }
 
 
@@ -410,8 +410,8 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
 	LogDebug("EventFilling") << "Doing Muons";
 	edm::Handle<l1extra::L1MuonParticleCollection> muon;
-	// edm::Handle<L1MuGMTReadoutCollection> reEmulMuon;
-	edm::Handle<L1GlobalTriggerReadoutRecord> reEmulMuon;
+	edm::Handle<L1MuGMTReadoutCollection> reEmulMuon;
+	// edm::Handle<L1GlobalTriggerReadoutRecord> reEmulMuon;
 	if (doReEmulMuons_) 
 	{	
 		LogDebug("UserOption") << "Using GMT re-emulated muons, not L1Extra";
