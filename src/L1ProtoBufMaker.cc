@@ -5,7 +5,7 @@
 // 
 /**\class L1ProtoBufMaker L1ProtoBufMaker.cc L1Trigger/L1ProtoBufMaker/src/L1ProtoBufMaker.cc
 
- Description: [EDAnalyzer module to convert AOD to protocol buffers. 
+ Description: [EDAnalyzer module to convert collections in files to protocol buffers. 
 				Amalgamation of UserCode/L1TriggerDPG/src/L1ExtraTreeProducer.cc, L1AnalysisEvent.cc, etc. 
 				Resulting files can be used with Mark Grimes' menu studies tools.]
 
@@ -103,8 +103,7 @@ class L1ProtoBufMaker : public edm::EDAnalyzer {
 		// For L1Trigger bits
 		edm::InputTag gtSource_;
 
-		// To read in AOD file:
-		// EDM input tags
+		// To read in collections
 		edm::InputTag egLabel_;
 		edm::InputTag isoEGLabel_;
 		edm::InputTag cenJetLabel_;
@@ -139,7 +138,7 @@ class L1ProtoBufMaker : public edm::EDAnalyzer {
 // Here we get 
 // - PU data/MC hists names
 // - GT digis (for L1Trigger bits)
-// - collection names from AOD (some defaults are provided, overridden in the cfi & cfg files), 
+// - collection names (some defaults are provided, overridden in the cfi & cfg files), 
 // - trigger menu and protobuf output filenames
 L1ProtoBufMaker::L1ProtoBufMaker(const edm::ParameterSet& iConfig):
 	doPUWeights_(iConfig.getUntrackedParameter("doPUWeights",true)),
@@ -155,7 +154,7 @@ L1ProtoBufMaker::L1ProtoBufMaker(const edm::ParameterSet& iConfig):
 	tauLabel_(iConfig.getUntrackedParameter("tauLabel",edm::InputTag("l1extraParticles:Tau"))),
 	isoTauLabel_(iConfig.getUntrackedParameter("isoTauLabel",edm::InputTag("none"))),
 	doReEmulMuons_(iConfig.getUntrackedParameter("doReEmulMuons",true)),
-	muonLabel_(iConfig.getUntrackedParameter("muonLabel",edm::InputTag("gtDigis"))),
+	muonLabel_(iConfig.getUntrackedParameter("muonLabel",edm::InputTag("gmtDigis"))),
 	metLabel_(iConfig.getUntrackedParameter("metLabel",edm::InputTag("l1extraParticles:MET"))),
 	mhtLabel_(iConfig.getUntrackedParameter("mhtLabel",edm::InputTag("l1extraParticles:MHT"))),
 	hfRingsLabel_(iConfig.getUntrackedParameter("hfRingsLabel",edm::InputTag("l1extraParticles")))
@@ -323,13 +322,21 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	edm::Handle<l1extra::L1EmParticleCollection> nonIsoEG;
 	iEvent.getByLabel(isoEGLabel_, isoEG);
 	iEvent.getByLabel(egLabel_, nonIsoEG);
-	if (nonIsoEG.isValid() && isoEG.isValid())
+	
+	if (nonIsoEG.isValid())
 	{  
-		event.setEG( nonIsoEG, isoEG);   
+		if (isoEG.isValid())
+		{
+			event.setEG( nonIsoEG, isoEG);   
+		}
+		else
+		{
+			edm::LogWarning("MissingProduct") << "L1Extra Iso Em not found. Branch will not be filled" << std::endl;
+		}
 	} 
 	else 
 	{
-		edm::LogWarning("MissingProduct") << "L1Extra Iso Em or Non Iso EM not found. Branch will not be filled" << std::endl;
+		edm::LogWarning("MissingProduct") << "L1Extra Non Iso EM not found. Branch will not be filled" << std::endl;
 	}
 	
 
@@ -338,13 +345,20 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	edm::Handle<l1extra::L1JetParticleCollection> fwdJet;
 	iEvent.getByLabel(cenJetLabel_, cenJet);
 	iEvent.getByLabel(fwdJetLabel_, fwdJet);
-	if (cenJet.isValid() && fwdJet.isValid())
+	if (cenJet.isValid() )
 	{
-		event.setJets( cenJet, fwdJet );
+		if (fwdJet.isValid())
+		{
+			event.setJets( cenJet, fwdJet );
+		}
+		else
+		{
+			edm::LogWarning("MissingProduct") << "L1Extra fwd Jet not found. Branch will not be filled" << std::endl;
+		}
 	} 
 	else 
 	{
-		edm::LogWarning("MissingProduct") << "L1Extra cen Jet or fwd jet not found. Branch will not be filled" << std::endl;
+		edm::LogWarning("MissingProduct") << "L1Extra cen Jet not found. Branch will not be filled" << std::endl;
 	}
 
 
@@ -408,12 +422,10 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
 
 	LogDebug("EventFilling") << "Doing Muons";
-	edm::Handle<l1extra::L1MuonParticleCollection> muon;
-	edm::Handle<L1MuGMTReadoutCollection> reEmulMuon;
-	// edm::Handle<L1GlobalTriggerReadoutRecord> reEmulMuon;
 	if (doReEmulMuons_) 
 	{	
 		LogDebug("UserOption") << "Using GMT re-emulated muons, not L1Extra";
+		edm::Handle<L1MuGMTReadoutCollection> reEmulMuon;
 		iEvent.getByLabel(muonLabel_, reEmulMuon); // use L1MuGMTReadoutCollection handle
 		if (reEmulMuon.isValid())
 		{
@@ -428,6 +440,7 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	else  
 	{
 		LogDebug("UserOption") << "Using L1Extra muons, not GMT re-emulated";
+		edm::Handle<l1extra::L1MuonParticleCollection> muon;
 		iEvent.getByLabel(muonLabel_, muon); // use l1extra collection handle
 		if (muon.isValid())
 		{
