@@ -12,6 +12,8 @@ import FWCore.ParameterSet.Config as cms
 # processs.l1ProtoBufMaker.protobufFilename = cms.string("myFile.pb")
 #
 
+print "Loading L1ProtoBufMaker defaults from l1ProtoBufMaker_cfi.py"
+
 l1ProtoBufMaker = cms.EDAnalyzer('L1ProtoBufMaker',
     doPUWeights      = cms.untracked.bool(False), # currently missing the PU files...
     puMCFile         = cms.untracked.string("PUHistS10.root"),
@@ -26,7 +28,7 @@ l1ProtoBufMaker = cms.EDAnalyzer('L1ProtoBufMaker',
     cenJetLabel      = cms.untracked.InputTag("l1extraParticles:Central"),
     fwdJetLabel      = cms.untracked.InputTag("l1extraParticles:Forward"),
     doReEmulMuons    = cms.untracked.bool(True), # whether to use re emulated muons from GMT, or use l1extra muons. Use former until simulation in place.
-    muonLabel        = cms.untracked.InputTag("valGctGigis"), # "valGctDigis" for re emul muons, or "l1extraParticles" for l1extra collection
+    muonLabel        = cms.untracked.InputTag("valGmtGigis"), # "valGmtDigis" for re emul muons, or "l1extraParticles" for l1extra collection
     metLabel         = cms.untracked.InputTag("l1extraParticles:MET"),
     mhtLabel         = cms.untracked.InputTag("l1extraParticles:MHT"),
     hfRingsLabel     = cms.untracked.InputTag("l1extraParticles"), # Not used at the moment
@@ -34,4 +36,4 @@ l1ProtoBufMaker = cms.EDAnalyzer('L1ProtoBufMaker',
     protobufFilename = cms.untracked.string("test.pb") # Output protobuf file
 )
 
-print "Loading L1ProtoBufMaker defaults from l1ProtoBufMaker_cfi.py"
+print "Done"
