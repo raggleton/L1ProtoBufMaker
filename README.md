@@ -9,7 +9,7 @@ More on protocol buffers:
 
 (https://developers.google.com/protocol-buffers/docs/overview)
 
-Please so [TODO](TODO.md) for things Robin has yet to do...
+Please see [TODO](TODO.md) for things Robin has yet to do...
 
 ##Installation instructions
 
@@ -106,3 +106,4 @@ Basic flow:
 	- `MenuGeneration/src/L1TriggerDPGEvent.cpp` - the `setX` methods must be updated
 	- the `apply()` methods in the triggers `MenuGeneration/src/triggers/X.cpp` 
 - The way the code is designed, no changes to `L1ProtoBufmaker.cc` should be necessary - everything happens through the setters in `L1TriggerDPGEvent.cpp`.
+- Note that for everything *except* muons, eta is measured in calo segments, from 0 (1?) to 21 (?), with 11 corresponding to eta = 0. Muons have a cut on absolute eta.
