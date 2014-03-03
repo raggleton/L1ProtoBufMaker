@@ -456,7 +456,7 @@ void L1ProtoBufMaker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 	// Pass L1TriggerDPGEvent object to ReducedSample to set trigger thresholds //
 	//////////////////////////////////////////////////////////////////////////////
 
-	// pReducedSample->addEvent( event ); 
+	pReducedSample->addEvent( event ); 
 
 }
 
@@ -475,7 +475,7 @@ void L1ProtoBufMaker::endJob()
 	
 	try
 	{
-		// pReducedSample->saveToFile( protobufFilename_ );
+		pReducedSample->saveToFile( protobufFilename_ );
 		std::cout << "Saving protobuf file to " << protobufFilename_ << std::endl;
 	}
 	catch( std::exception& error )
