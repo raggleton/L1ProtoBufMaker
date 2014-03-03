@@ -4,7 +4,7 @@ print "Adding current L1 information"
 
 # make L1 ntuples from RAW+RECO
 # Stripped down version of L1TriggerUpgrade/python/l1CurrentNtupleFromRAW.py
-# The L1ProtoBufMaker module is added in in the individual data/MC config files
+# Remove all of the ROOT TTree producers, just keep the other relevant EDProducers
 
 process = cms.Process("L1PROTOBUF")
 
@@ -116,15 +116,15 @@ process.source = cms.Source ("PoolSource",
                              )
 
 # Debug stuff
-process.output = cms.OutputModule(
-   "PoolOutputModule",
-   outputCommands = cms.untracked.vstring('keep *'),
-   fileName = cms.untracked.string('output.root')
-   )
-process.e = cms.EndPath(process.output)
+# process.output = cms.OutputModule(
+#    "PoolOutputModule",
+#    outputCommands = cms.untracked.vstring('keep *'),
+#    fileName = cms.untracked.string('output.root')
+#    )
+# process.e = cms.EndPath(process.output)
 
-file = open("l1Stage1NtupleFromGENRAW_cfg.py",'w')
-file.write(str(process.dumpPython()))
-file.close()
+# file = open("l1CurrentNtupleFromGENRAW_cfg.py",'w')
+# file.write(str(process.dumpPython()))
+# file.close()
 
 print "Done"
