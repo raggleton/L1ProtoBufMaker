@@ -9,12 +9,7 @@ More on protocol buffers:
 
 (https://developers.google.com/protocol-buffers/docs/overview)
 
-## TODO
-
-- Uncomment the file-saving etc. Currently only gets collections and adds to L1TriggerDPGEvent obj.
-- Implement HFRings?
-- Tidy up passing to setters in L1TriggerDPGEvent (need refs/pointers)
-- Testing!
+Please so [TODO](TODO.md) for things Robin has yet to do...
 
 ##Installation instructions
 
