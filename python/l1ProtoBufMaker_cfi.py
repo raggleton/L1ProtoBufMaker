@@ -32,7 +32,7 @@ l1ProtoBufMaker = cms.EDAnalyzer('L1ProtoBufMaker',
     metLabel         = cms.untracked.InputTag("l1extraParticles:MET"),
     mhtLabel         = cms.untracked.InputTag("l1extraParticles:MHT"),
     hfRingsLabel     = cms.untracked.InputTag("l1extraParticles"), # Not used at the moment
-    menuFilename     = cms.string("/storage/phrca/L1Menu/CMSSW_6_1_2_SLHC2/src/L1Trigger/MenuGeneration/test/L1Menu_input_std.txt"), # Trigger menu input file
+    menuFilename     = cms.string("/storage/phrca/L1Menu/CMSSW_6_1_2_SLHC2/src/L1Trigger/MenuGeneration/test/L1Menu_input_v22.txt"), # Trigger menu input file
     protobufFilename = cms.untracked.string("test.pb") # Output protobuf file
 )
 
