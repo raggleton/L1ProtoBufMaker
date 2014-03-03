@@ -1,7 +1,7 @@
 L1ProtoBufMaker
 ================
 
-Code for EDAnalyzer module to produce lightweight L1 trigger upgrade protocol buffer files from AOD format. No need to go to ntuples and then convert to protocol buffers.
+Code for EDAnalyzer module to produce lightweight L1 trigger upgrade protocol buffer files from RAW format. No need to go to ntuples and then convert to protocol buffers.
 
 The idea behind using protocol buffers is that we only store the relevant info: for a given event, for a given trigger; *what is the tightest threshold at which this event would pass this trigger*. So when we come to look at rates, we can quickly and easily iterate over different bandwidths for each trigger by applying a threshold and counting the events which pass.
 
@@ -11,42 +11,65 @@ More on protocol buffers:
 
 ## TODO
 
-- Fix adding muons from re-emulated GMT. Issue with getting from AOD
+- Uncomment the file-saving etc. Currently only gets collections and adds to L1TriggerDPGEvent obj.
 - Implement HFRings?
 - Tidy up passing to setters in L1TriggerDPGEvent (need refs/pointers)
-- Duplicate removal
 - Testing!
 
 ##Installation instructions
 
+Note this is for the non-track-trigger version.
+
 ```
-scram project CMSSW CMSSW_6_0_1 # isn't dependant on this specific CMSSW version.
-cd CMSSW_6_0_1/src
+scram project CMSSW_6_1_2_SLHC2
+cd CMSSW_6_1_2_SLHC2/src
 cmsenv
-git cms-addpkg Documentation/ReferenceManualScripts
+
+git cms-addpkg SLHCUpgradeSimulations/L1CaloTrigger
+git cms-addpkg SimDataFormats/SLHC
+git remote add jbsauvan-cmssw git@github.com:jbsauvan/cmssw.git
+git fetch jbsauvan-cmssw new-eg-l1-clustering:new-eg-l1-clustering
+git checkout new-eg-l1-clustering
+
+git clone https://github.com/uwcms/UCT2015.git L1Trigger/UCT2015
+git cms-addpkg L1Trigger/RegionalCaloTrigger
+git cms-addpkg DataFormats/L1CaloTrigger
+git cms-addpkg L1TriggerConfig/L1ScalesProducers
+patch -N -p0 < L1Trigger/UCT2015/eic9bit.patch
+
+cvs co -r jimb4Jan2013 UserCode/L1TriggerDPG
+cvs co -r jimb14May2013 UserCode/L1TriggerUpgrade
+
 git clone git@github.com:mark-grimes/MenuGeneration.git L1Trigger/MenuGeneration
-# add Robin's fork & branch to MenuGeneration. Will put in master branch at some point
+# add Robin's fork & branch to MenuGeneration. Does this work properly?
 cd L1Trigger/MenuGeneration
-git remote add RobinProtoBufMaker git@github.com:raggleton/MenuGeneration.git
-git fetch RobinProtoBufMaker
-git checkout -b ProtoBufMaker RobinProtoBufMaker/ProtoBufMaker
+git remote add Robin git@github.com:raggleton/MenuGeneration.git
+git fetch Robin
+git checkout -b ProtoBufMaker Robin/ProtoBufMaker
 cd ../..
 git clone git@github.com:raggleton/L1ProtoBufMaker.git L1Trigger/L1ProtoBufMaker
-export CVSROOT=:ext:<your-cern-username>@lxplus.cern.ch:/afs/cern.ch/user/c/cvscmssw/public/CMSSW
-cvs co UserCode/L1TriggerDPG
-cvs co UserCode/L1TriggerUpgrade
-cd L1Trigger  # doesn't like to checkout to 2 folders deep 
-cvs co -d UCT2015 UserCode/dasu/L1Trigger/UCT2015
+
 scram b -j 6
-scram b doc
 ```
 (https://github.com/mark-grimes/MenuGeneration)
 
-(https://github.com/kknb1056/MenuGeneration)
-
 ## Running instructions
 
-For a simple example see `l1protobufmaker_cfg.py`. This takes an AOD file, loads the protoBufMaker module & default args from `python/l1protobufmaker_cfi.py`. The source code for the module is in `src/L1ProtoBufMaker.cc`. 
+The `python` folder contains basic scripts for 4 scenarios: current, Stage 1 upgrades, Stage 2 upgrades, and Fallback (Stage 1 EG, tau, muon iso + Stage 2 jets). They all use l1CurrentNtupleFromRAW.py as a base config. Run them with `cmsRun <scriptname>`. 
+
+The `test` folder contains data & MC specific configurations. MC have GEN in the filename.
+
+All configs take a (GEN-SIM-DIGI-)RAW file, loads some modules which add collections of objects (e.g. l1Extra), then finally loads the l1ProtoBufMaker module & default args from `python/l1ProtoBufMaker_cfi.py`. The user can then override which EG/jet/etc collections are used when applying the triggers. Example:
+
+```
+# Add in l1ProtoBufMaker module
+process.load("L1Trigger.L1ProtoBufMaker.l1ProtoBufMaker_cfi")
+process.l1ProtoBufMaker.egLabel       = cms.untracked.InputTag("uct2015L1ExtraParticles", "Relaxed")
+process.l1ProtoBufMaker.isoEGLabel    = cms.untracked.InputTag("uct2015L1ExtraParticles", "Isolated")
+process.l1ProtoBufMaker.cenJetLabel   = cms.untracked.InputTag("uct2015L1ExtraParticles", "Jets")
+```
+
+The source code for the module is in `src/L1ProtoBufMaker.cc`. 
 
 ## Detailed description
 
@@ -67,8 +90,8 @@ Basic flow:
 	-  Calculate the PU weight (MC only).
 	-  Set run #, LS, event #.
 	-  Set L1 trigger bits from Global Trigger.
-	-  Get the `l1extra` collections from the AOD. (Except for muons - can also use re-emulated muons from GMT **TODO-fix**.)
-	-  Fill the event object with EG/jet/muon/… information from the AOD collections. [**TODO - muons**]
+	-  Get the `l1extra` collections from the RAW collections. 
+	-  Fill the event object with EG/jet/muon/… information from the input collections.
 	-  Add the `L1TriggerDPGEvent` object to `ReducedSample`. This does the following:
 		- Check to see if a new `l1protobuf::Run` object is required. ( The protobuf events are stored in groups of 20000 in a  `l1protobuf::Run`, to circumvent a limit set by Google.)
 		-  Make a new `l1protobuf::Event` object to store the trigger thresholds in.
@@ -88,5 +111,3 @@ Basic flow:
 	- `MenuGeneration/src/L1TriggerDPGEvent.cpp` - the `setX` methods must be updated
 	- the `apply()` methods in the triggers `MenuGeneration/src/triggers/X.cpp` 
 - The way the code is designed, no changes to `L1ProtoBufmaker.cc` should be necessary - everything happens through the setters in `L1TriggerDPGEvent.cpp`.
-
-*Yes, I'm well aware that I've used proto**B**uf  and proto**b**uf in my code. I should probably be more consistent. But at least I've never used buf**f** *

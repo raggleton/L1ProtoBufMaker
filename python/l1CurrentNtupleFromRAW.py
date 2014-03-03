@@ -2,7 +2,7 @@ import FWCore.ParameterSet.Config as cms
 
 print "Adding current L1 information"
 
-# make L1 ntuples from RAW+RECO
+# make L1 ProtoBuf from RAW+RECO
 # Stripped down version of L1TriggerUpgrade/python/l1CurrentNtupleFromRAW.py
 # Remove all of the ROOT TTree producers, just keep the other relevant EDProducers
 
@@ -116,6 +116,8 @@ process.source = cms.Source ("PoolSource",
                              )
 
 # Debug stuff
+# This bit outputs the edm collections in a ROOT file
+# Use edmDumpEventContent to see what's there
 # process.output = cms.OutputModule(
 #    "PoolOutputModule",
 #    outputCommands = cms.untracked.vstring('keep *'),
@@ -123,6 +125,8 @@ process.source = cms.Source ("PoolSource",
 #    )
 # process.e = cms.EndPath(process.output)
 
+# This bit dumps out the complete config file. Long!!
+# Use with edmConfigEditor for GUI exploration
 # file = open("l1CurrentNtupleFromGENRAW_cfg.py",'w')
 # file.write(str(process.dumpPython()))
 # file.close()
