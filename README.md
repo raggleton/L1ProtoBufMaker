@@ -13,7 +13,7 @@ Please see [TODO](TODO.md) for things Robin has yet to do...
 
 ##Installation instructions
 
-Note this is for the non-track-trigger version.
+For the **non-track-trigger version**
 
 ```
 scram project CMSSW_6_1_2_SLHC2
@@ -46,6 +46,61 @@ git clone git@github.com:raggleton/L1ProtoBufMaker.git L1Trigger/L1ProtoBufMaker
 
 scram b -j 6
 ```
+
+For the **track-trigger version**:
+
+```
+cmsrel CMSSW_6_1_2_SLHC6_patch1
+cd CMSSW_6_1_2_SLHC6_patch1/src
+cmsenv
+
+git cms-addpkg Geometry/TrackerGeometryBuilder
+git cms-addpkg RecoVertex/BeamSpotProducer
+git cms-addpkg RecoHI/HiJetAlgos    # for the HeavyIons HLT algorithm
+
+git clone https://github.com/uwcms/UCT2015.git L1Trigger/UCT2015
+git cms-addpkg L1Trigger/RegionalCaloTrigger
+git cms-addpkg DataFormats/L1CaloTrigger
+git cms-addpkg L1TriggerConfig/L1ScalesProducers
+patch -N -p0 < L1Trigger/UCT2015/eic9bit.patch
+
+echo SimDataFormats/SLHC/  >> .git/info/sparse-checkout
+echo SLHCUpgradeSimulations/L1TrackTrigger/  >> .git/info/sparse-checkout
+echo SLHCUpgradeSimulations/L1TrackTriggerObjects/ >> .git/info/sparse-checkout
+echo DataFormats/L1TrackTrigger/ >> .git/info/sparse-checkout
+echo SLHCUpgradeSimulations/L1CaloTrigger/ >> .git/info/sparse-checkout
+
+git remote add louise git@github.com:skinnari/cmssw.git
+git fetch louise
+git checkout TTI_61X_v5 -- SLHCUpgradeSimulations/L1TrackTrigger
+
+git remote add ep git@github.com:EmanuelPerez/cmssw.git
+git fetch ep
+git checkout TTI_61X_TrackTriggerObjects_V15  -- SimDataFormats/SLHC       
+git checkout TTI_61X_TrackTriggerObjects_V15 -- DataFormats/L1TrackTrigger
+git checkout TTI_61X_TrackTriggerObjects_V15 -- Geometry/TrackerGeometryBuilder
+git checkout TTI_61X_TrackTriggerObjects_V15  -- SLHCUpgradeSimulations/L1TrackTriggerObjects
+git checkout TTI_61X_TrackTriggerObjects_V15  -- SLHCUpgradeSimulations/L1CaloTrigger
+git checkout TTI_61X_TrackTriggerObjects_V15  -- RecoVertex/BeamSpotProducer
+git checkout TTI_61X_TrackTriggerObjects_V15  -- RecoHI/HiJetAlgos
+
+#UserCode with L1TriggerUpgrade Ntuple code including TrkTriggerObjects can be found at: /afs/cern.ch/user/g/georgia/public/l1menu/l1menuNtupleAndtrackTrg.tar
+
+git clone git@github.com:mark-grimes/MenuGeneration.git L1Trigger/MenuGeneration
+cd L1Trigger/MenuGeneration
+git remote add Robin git@github.com:raggleton/MenuGeneration.git
+git fetch Robin
+git checkout -b ProtoBufMaker_TTI Robin/ProtoBufMaker_TTI 
+cd ../..
+git clone git@github.com:raggleton/L1ProtoBufMaker.git L1Trigger/L1ProtoBufMaker
+cd L1Trigger/L1ProtoBufMaker
+git checkout TTI
+cd ../..
+
+scram b -j9
+
+```
+https://github.com/raggleton/MenuGeneration
 (https://github.com/mark-grimes/MenuGeneration)
 
 ## Running instructions
