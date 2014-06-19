@@ -207,6 +207,7 @@ L1ProtoBufMaker::~L1ProtoBufMaker()
  
 	// do anything here that needs to be done at desctruction time
 	// (e.g. close files, deallocate resources etc.)
+	delete pReducedSample; // or use smart poitner instead...
 }
 
 
